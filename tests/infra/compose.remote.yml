@@ -1,10 +1,37 @@
 # Always combine AFTER docker-compose.yml; never deploy the product file alone.
 services:
   api:
+    cpus: 0.5
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 128
     ports: !reset []
     restart: "no"
   minio:
+    cpus: 0.5
+    mem_limit: 768m
+    memswap_limit: 768m
+    pids_limit: 128
     ports: !reset []
     restart: "no"
   db:
+    cpus: 0.5
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 128
     restart: "no"
+  buckets:
+    cpus: 0.25
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
+  tests:
+    cpus: 0.75
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    pids_limit: 256
+  core-tests:
+    cpus: 0.75
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    pids_limit: 256
