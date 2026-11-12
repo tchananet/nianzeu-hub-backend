@@ -1,4 +1,26 @@
-# Reprise A01 — prêt pour revue QA, non validé
+# État global — A01 VALIDÉ, F01 remis QA / BLOQUÉ
+
+Mise à jour Backend F01 autorisée le 2026-11-12. A01 : **VALIDÉ par QA** au candidat
+`e7a7b2c`, rapport `42c9a9f`, fusion main `9ae4a0d607f5a048ecf64c2ad095fd162a079e57`.
+F01 : implémentation remise pour revue indépendante, **BLOQUÉ**, aucune auto-validation.
+SHA applicatif testé : `acd067b11adb532af6cec50cd8a60b1809c6b4d7`.
+
+Compteurs : lock/Ruff/Mypy/diff verts ; 45 tests unitaires réussis ; 2 tests PostgreSQL
+en erreur explicite faute de `TEST_DATABASE_URL`, 0 skip. Suite complète : 45 réussis,
+2 erreurs, sortie 1. 24 fichiers Python, maximum 89 lignes, aucune exception source.
+7 commandes consolidées : 5 sorties 0 et 2 sorties 1 (DB seule et suite complète).
+Installation complète bloquée aussi par espace disque E: insuffisant : 50 paquets locaux,
+PyAV verrouillé mais non installé. Ce n'est pas une installation complète validée.
+
+Reprise : libérer l'espace nécessaire sous responsabilité du propriétaire, fournir une PostgreSQL
+de test locale autorisée, relancer sync verrouillé et tous les contrôles, puis revue indépendante.
+Commandes exactes, microcommits, ownership, limites et journal dans [F01](missions/F01.md).
+F02 et toutes les suites **non commencées**. Aucun merge/push/déploiement par F01.
+
+## Archive de la remise auteur A01 avant revue (historique)
+
+Le texte ci-dessous décrit la remise initiale ; son ancien état « non validé » est remplacé
+par le verdict et la fusion A01 ci-dessus. Ses preuves historiques restent conservées.
 
 Date : 2026-11-12. Exécutant : Architect. Worktree : E:/Dev/nianzeuhub-main/nianzeuhub-main/worktrees/A01. Branche : docs/a01-architecture. Base : 2d64a56bc9f8e6c48b8bf994bfbf6ab9b122b2d7. Aucun code applicatif, frontend, fusion, push ou déploiement effectué. Ne pas démarrer F01 avant QA indépendante positive et fusion A01 par responsable habilité.
 
