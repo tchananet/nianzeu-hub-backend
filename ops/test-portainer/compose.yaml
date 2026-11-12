@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: "no"
+    cpus: 0.5
+    mem_limit: 512m
+    pids_limit: 128
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      POSTGRES_USER: bootstrap
+      POSTGRES_PASSWORD: disposable-bootstrap-only
+      POSTGRES_DB: postgres
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        printf '%s\n' "CREATE ROLE f01 LOGIN PASSWORD 'disposable-f01-only' NOSUPERUSER NOCREATEDB NOCREATEROLE;" "CREATE DATABASE f01_test OWNER f01;" "REVOKE CONNECT ON DATABASE postgres FROM PUBLIC;" > /docker-entrypoint-initdb.d/f01.sql
+        exec docker-entrypoint.sh postgres -c listen_addresses=127.0.0.1 -c max_connections=40
+    tmpfs:
+      - /var/lib/postgresql/data:size=268435456
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U f01 -d f01_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    logging: &logging
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+  runner:
+    image: python:3.13-bookworm
+    restart: "no"
+    cpus: 1.0
+    mem_limit: 2g
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    network_mode: service:postgres
+    depends_on:
+      postgres: {condition: service_healthy}
+    working_dir: /work
+    volumes: ["work:/work"]
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://f01:disposable-f01-only@127.0.0.1/f01_test
+      UV_NO_CACHE: "1"
+      UV_PYTHON_DOWNLOADS: never
+      GIT_TERMINAL_PROMPT: "0"
+    entrypoint: ["timeout", "--signal=TERM", "--kill-after=10s", "900s", "/bin/bash", "-ceuo", "pipefail"]
+    command:
+      - |
+        python -c 'import os; s=os.statvfs("/work"); disk=s.f_bavail*s.f_frsize; mem=int(next(x.split()[1] for x in open("/proc/meminfo") if x.startswith("MemAvailable:")))*1024; print("PREFLIGHT /work free bytes:", disk, "proc MemAvailable bytes:", mem, flush=True); assert disk >= 8*1024**3, "Insufficient workspace filesystem space"; assert mem >= 6*1024**3, "Insufficient reported host memory"'
+        test ! -e /work/source
+        command -v git
+        python -c 'import sys; assert sys.version_info[:2] == (3, 13)'
+        git init -q /work/source
+        cd /work/source
+        git -c credential.helper= fetch --depth=1 https://github.com/tchananet/nianzeu-hub-backend.git 6d3cd45cb4f9b7685cbda06bf4ecaf9207d44c05
+        git checkout --detach FETCH_HEAD
+        test "$$(git rev-parse HEAD)" = 6d3cd45cb4f9b7685cbda06bf4ecaf9207d44c05
+        git archive --format=tar HEAD | sha256sum
+        sha256sum uv.lock
+        python -m pip install --no-cache-dir uv==0.11.6
+        uv --version
+        uv sync --locked --python 3.13 --all-groups --all-extras
+        uv sync --locked --check --python 3.13 --all-groups --all-extras
+        uv run --no-sync python --version
+        uv run --no-sync ruff --version
+        uv run --no-sync mypy --version
+        uv run --no-sync pytest --version
+        uv run --no-sync python -c 'import av; print("PyAV", av.__version__)'
+        uv run --no-sync ruff check .
+        uv run --no-sync mypy app
+        uv run --no-sync pytest tests/core
+        uv run --no-sync pytest
+        git diff --exit-code -- pyproject.toml uv.lock
+        echo F01_REMOTE_PASS_6d3cd45cb4f9b7685cbda06bf4ecaf9207d44c05
+    logging: *logging
+volumes:
+  work:

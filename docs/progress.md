@@ -5,7 +5,7 @@
 Branche `test/f01-integration-remote`, worktree `worktrees/F01-INTEGRATION`,
 base main `86822068afe71d7a0116d2267c13785a6b64c1d2`.
 Intégration --no-ff de F01 `6d3cd45cb4f9b7685cbda06bf4ecaf9207d44c05`,
-puis du harness `a75fcfc1f88a3d3b1d8fafc6d1d09b2204d7cdd5` prévue.
+puis du harness `a75fcfc1f88a3d3b1d8fafc6d1d09b2204d7cdd5`.
 Seul conflit résolu : ce suivi ; code applicatif et CORS inchangés.
 Le parent signale stack distante isolée 101 en cours : lock, PyAV, Ruff et Mypy
 réussis à ce stade ; aucune réussite pytest ni validation finale déduite ici.
