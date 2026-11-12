@@ -20,6 +20,13 @@ class ContactWrite(DTO):
     phone_visible: bool
     whatsapp_visible: bool
 
+    @field_validator("phone", "whatsapp", mode="before")
+    @classmethod
+    def no_phone_spaces(cls, value: object) -> object:
+        if isinstance(value, str) and any(char.isspace() for char in value):
+            raise ValueError("E.164 numbers cannot contain spaces")
+        return value
+
     @field_validator("email")
     @classmethod
     def normalize_email(cls, value: str | None) -> str | None:
