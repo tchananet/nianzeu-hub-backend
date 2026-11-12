@@ -14,7 +14,7 @@ def config_data() -> dict[str, object]:
         storage_secret_key="test-secret",
         quarantine_bucket="quarantine",
         validated_bucket="validated",
-        frontend_origin="https://frontend.test",
+        frontend_origin="https://diddifree.com",
         quota_hmac_secret="x" * 32,
     )
 

@@ -7,7 +7,9 @@ from urllib3.exceptions import HTTPError
 
 
 def s3_error(code):
-    return S3Error(code, "sensitive detail", "bucket", "request", "host", None)
+    # minio>=7.2 takes the response first; keywords keep the code in the right slot.
+    return S3Error(response=None, code=code, message="sensitive detail",
+                   resource="bucket", request_id="request", host_id="host")
 
 
 def test_ready_checks_both_private_buckets_without_schema(health_client):

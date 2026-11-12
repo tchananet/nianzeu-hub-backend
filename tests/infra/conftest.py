@@ -15,7 +15,7 @@ def health_client(monkeypatch):
         storage_public_endpoint="https://files.test",
         storage_access_key="test-access", storage_secret_key="test-secret",
         quarantine_bucket="quarantine", validated_bucket="validated",
-        frontend_origin="https://frontend.test", quota_hmac_secret="x" * 32,
+        frontend_origin="https://diddifree.com", quota_hmac_secret="x" * 32,
     ))
     monkeypatch.setattr("app.main.Settings", lambda: settings)
     engine, storage = MagicMock(), Mock()

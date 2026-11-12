@@ -11,7 +11,7 @@ RUN uv sync --locked --no-dev --no-install-project --no-build \
 COPY app ./app
 USER 10001:10001
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--no-proxy-headers", "--no-access-log"]
+CMD ["uvicorn", "--factory", "app.main:create_app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--no-proxy-headers", "--no-access-log"]
 
 FROM runtime AS test
 USER root

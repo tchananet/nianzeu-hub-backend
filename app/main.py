@@ -14,6 +14,7 @@ from app.core.database import build_engine, check_database
 from app.core.request_context import RequestContext
 from app.shared.errors import DependencyUnavailable
 from app.shared.http_errors import install_error_handlers
+from app.wiring import build_routers
 
 
 def storage_client(settings: Settings) -> Minio:
@@ -52,21 +53,26 @@ def check_buckets(client: Minio, settings: Settings) -> None:
 
 
 def create_app() -> FastAPI:
+    # Built here rather than in the lifespan: routing needs the collaborators before
+    # the application starts serving. The lifespan only releases the pool.
+    settings = Settings()
+    engine = build_engine(settings)
+
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        settings = Settings()
-        engine = build_engine(settings)
-        application.state.settings = settings
-        application.state.engine = engine
-        application.state.storage = storage_client(settings)
         try:
             yield
         finally:
             engine.dispose()
 
     application = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    application.state.settings = settings
+    application.state.engine = engine
+    application.state.storage = storage_client(settings)
     install_error_handlers(application)
     application.add_middleware(RequestContext)
+    for router in build_routers(settings, engine):
+        application.include_router(router)
 
     @application.get("/health/live")
     def live() -> dict[str, str]:
@@ -82,6 +88,3 @@ def create_app() -> FastAPI:
         return {"status": "ready"}
 
     return application
-
-
-app = create_app()
