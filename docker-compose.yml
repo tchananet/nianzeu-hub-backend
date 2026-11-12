@@ -13,6 +13,9 @@ services:
       APP_FRONTEND_ORIGIN: ${APP_FRONTEND_ORIGIN:?required}
       APP_QUOTA_HMAC_SECRET: ${APP_QUOTA_HMAC_SECRET:?required}
       APP_SECURE_COOKIES: ${APP_SECURE_COOKIES:-true}
+      # Address of the reverse proxy. Without it uvicorn distrusts the forwarded
+      # headers and every per-IP quota collapses onto the proxy's own address.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:?required}
     ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
     depends_on:
       db: {condition: service_healthy}
