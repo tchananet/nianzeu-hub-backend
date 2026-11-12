@@ -40,7 +40,9 @@ class MinioStorage:
             fields = self.client.presigned_post_policy(policy)
         except (MinioException, OSError, ValueError) as error:
             raise mapped(error) from None
-        return PresignedPost(f"{self.public_endpoint}/{bucket}", fields, expires_at)
+        # The form must carry the exact key and type the policy pins; clients only forward them.
+        form = {**fields, "key": key, "Content-Type": media_type}
+        return PresignedPost(f"{self.public_endpoint}/{bucket}", form, expires_at)
 
     def head(self, bucket: str, key: str) -> ObjectInfo:
         try:
