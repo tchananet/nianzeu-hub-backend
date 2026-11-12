@@ -52,5 +52,5 @@ def migration_db():
 @pytest.fixture
 def migrated(migration_db):
     connection, config, _ = migration_db
-    command.upgrade(config, "head")
+    command.upgrade(config, "0001_identity")
     return connection

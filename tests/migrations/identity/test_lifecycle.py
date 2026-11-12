@@ -15,7 +15,8 @@ pytestmark = pytest.mark.integration
 def test_single_root_revision():
     config = Config(str(Path(__file__).resolve().parents[3] / "alembic.ini"))
     scripts = ScriptDirectory.from_config(config)
-    assert scripts.get_heads() == ["0001_identity"]
+    assert scripts.get_bases() == ["0001_identity"]
+    assert len(scripts.get_heads()) == 1
     assert scripts.get_revision("0001_identity").down_revision is None
 
 
@@ -23,12 +24,12 @@ def test_upgrade_downgrade_upgrade(migration_db, monkeypatch):
     connection, config, schema = migration_db
     assert inspect(connection).get_table_names(schema=schema) == []
     connection.commit()
-    command.upgrade(config, "head")
+    command.upgrade(config, "0001_identity")
     assert set(inspect(connection).get_table_names(schema=schema)) == TABLES | {"alembic_version"}
     owner = user(connection)
     child(connection, "sessions", owner)
     connection.commit()
-    command.upgrade(config, "head")
+    command.upgrade(config, "0001_identity")
     assert connection.execute(text("SELECT id FROM users")).scalar_one() == owner
     assert connection.execute(text("SELECT count(*) FROM sessions")).scalar_one() == 1
     connection.commit()
@@ -36,7 +37,7 @@ def test_upgrade_downgrade_upgrade(migration_db, monkeypatch):
     command.downgrade(config, "base")
     assert inspect(connection).get_table_names(schema=schema) == ["alembic_version"]
     connection.commit()
-    command.upgrade(config, "head")
+    command.upgrade(config, "0001_identity")
     assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == (
         "0001_identity"
     )
@@ -47,7 +48,7 @@ def test_upgrade_downgrade_upgrade(migration_db, monkeypatch):
 
 def test_downgrade_requires_opt_in(migration_db, monkeypatch):
     connection, config, schema = migration_db
-    command.upgrade(config, "head")
+    command.upgrade(config, "0001_identity")
     monkeypatch.delenv("ALLOW_DESTRUCTIVE_DOWNGRADE", raising=False)
     with pytest.raises(RuntimeError, match="explicit opt-in"):
         command.downgrade(config, "base")
