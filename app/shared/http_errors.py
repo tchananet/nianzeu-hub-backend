@@ -53,6 +53,9 @@ async def validation_error(request: Request, error: Exception) -> JSONResponse:
 
 async def http_error(request: Request, error: Exception) -> JSONResponse:
     assert isinstance(error, HTTPException)
+    # FastAPI wraps body decoding failures in HTTPException, not validation errors.
+    if error.status_code == 400 and isinstance(error.__cause__, UnicodeDecodeError):
+        return error_response(request, "INVALID_JSON", 400, "Invalid JSON")
     codes = {
         404: "NOT_FOUND",
         405: "METHOD_NOT_ALLOWED",
