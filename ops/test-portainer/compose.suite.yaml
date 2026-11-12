@@ -62,7 +62,11 @@ services:
         uv run --no-sync mypy app
         APP_DATABASE_URL="$$DB_URL" uv run --no-sync alembic upgrade head
         APP_DATABASE_URL="$$DB_URL" uv run --no-sync alembic current
-        TEST_DATABASE_URL="$$DB_URL" IDENTITY_TEST_DATABASE_URL="$$DB_URL" PROFILES_TEST_DATABASE_URL="$$DB_URL" uv run --no-sync pytest -q -p no:randomly
+        export TEST_DATABASE_URL="$$DB_URL"
+        export IDENTITY_TEST_DATABASE_URL="$$DB_URL"
+        export PROFILES_TEST_DATABASE_URL="$$DB_URL"
+        export DISCOVERY_TEST_DATABASE_URL="$$DB_URL"
+        uv run --no-sync pytest -q -p no:randomly
         echo "SUITE_PASS $$(git rev-parse HEAD)"
     logging: *logging
 volumes:
