@@ -1,0 +1,14 @@
+# Daily backup schedule — root crontab on the Docker host.
+# RPO target is 24 h, so exactly one successful run per day is mandatory.
+# Install with: crontab -l | cat - ops/backup/schedule.example | crontab -
+#
+# The env file holds credentials: chmod 600, owned by root, never in git.
+# `set -a` exports it; the scripts read nothing else.
+# A non-zero exit must page an operator: cron mail alone is not monitoring.
+
+30 2 * * * /usr/bin/flock -n /run/nianzeuhub-backup.lock /bin/bash -lc 'set -a; . /etc/nianzeuhub/backup.env; set +a; bash /opt/nianzeuhub/ops/backup/backup.sh' >> /var/log/nianzeuhub-backup.log 2>&1
+
+# The hourly portfolio cleanup (docs/contracts/portfolio.md) must not run while
+# a backup is in progress: share the same lock file.
+# 0 * * * * /usr/bin/flock -n /run/nianzeuhub-backup.lock docker exec nianzeuhub-api-1 \
+#   python -m app.modules.portfolio.cleanup --once
