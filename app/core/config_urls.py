@@ -3,6 +3,8 @@ from urllib.parse import urlsplit
 
 
 def endpoint(value: str, *, local_http: bool = False, internal: bool = False) -> str:
+    if any(char.isspace() or ord(char) < 32 for char in value):
+        raise ValueError("Whitespace/control characters forbidden in origins")
     url = urlsplit(value)
     try:
         loopback = url.hostname == "localhost" or ip_address(url.hostname or "").is_loopback
