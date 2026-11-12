@@ -1,6 +1,7 @@
 # Disposable full-suite verification stack. Isolated by design: tmpfs database,
 # loopback-only listeners, no published ports, no host volumes, no production data.
-# SUITE_SHA pins the exact commit under test and is supplied as a stack variable.
+# The runner fetches origin/main and records the resolved commit in its log, so a
+# re-verification is a container restart rather than a stack rewrite.
 services:
   postgres:
     image: postgres:16-alpine
@@ -46,16 +47,15 @@ services:
       UV_NO_CACHE: "1"
       UV_PYTHON_DOWNLOADS: never
       GIT_TERMINAL_PROMPT: "0"
-      SUITE_SHA: ${SUITE_SHA}
     entrypoint: ["timeout", "--signal=TERM", "--kill-after=10s", "1800s", "/bin/bash", "-ceuo", "pipefail"]
     command:
       - |
         rm -rf /work/source
         git init -q /work/source
         cd /work/source
-        git -c credential.helper= fetch --depth=1 https://github.com/tchananet/nianzeu-hub-backend.git "$$SUITE_SHA"
+        git -c credential.helper= fetch --depth=1 https://github.com/tchananet/nianzeu-hub-backend.git main
         git checkout --detach FETCH_HEAD
-        test "$$(git rev-parse HEAD)" = "$$SUITE_SHA"
+        echo "SUITE_COMMIT $$(git rev-parse HEAD)"
         python -m pip install --no-cache-dir --quiet uv==0.11.6
         uv sync --locked --python 3.13 --all-groups --all-extras
         uv run --no-sync ruff check .
@@ -63,7 +63,7 @@ services:
         APP_DATABASE_URL="$$DB_URL" uv run --no-sync alembic upgrade head
         APP_DATABASE_URL="$$DB_URL" uv run --no-sync alembic current
         TEST_DATABASE_URL="$$DB_URL" IDENTITY_TEST_DATABASE_URL="$$DB_URL" PROFILES_TEST_DATABASE_URL="$$DB_URL" uv run --no-sync pytest -q -p no:randomly
-        echo "SUITE_PASS $$SUITE_SHA"
+        echo "SUITE_PASS $$(git rev-parse HEAD)"
     logging: *logging
 volumes:
   work:
