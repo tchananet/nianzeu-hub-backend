@@ -2,6 +2,13 @@ from ipaddress import ip_address
 from urllib.parse import urlsplit
 
 
+def is_local_http_api(value: str | None) -> bool:
+    if value is None:
+        return False
+    url = urlsplit(value)
+    return url.scheme == "http" and url.hostname == "localhost"
+
+
 def endpoint(value: str, *, local_http: bool = False, internal: bool = False) -> str:
     if any(char.isspace() or ord(char) < 32 for char in value):
         raise ValueError("Whitespace/control characters forbidden in origins")
