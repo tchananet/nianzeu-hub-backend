@@ -1,6 +1,24 @@
-# Suivi global — validations F01 bloquées
+# Suivi global — candidat intégré F01, revalidation QA requise
 
-## État courant transmis le 2026-11-12
+## Intégration candidate du 2026-11-12 — aucune fusion main
+
+Branche `test/f01-integration-remote`, worktree `worktrees/F01-INTEGRATION`,
+base main `86822068afe71d7a0116d2267c13785a6b64c1d2`.
+Intégration --no-ff de F01 `6d3cd45cb4f9b7685cbda06bf4ecaf9207d44c05`,
+puis du harness `a75fcfc1f88a3d3b1d8fafc6d1d09b2204d7cdd5`.
+Seul conflit résolu : ce suivi ; code applicatif et CORS inchangés.
+Le parent signale stack distante isolée 101 en cours : lock, PyAV, Ruff et Mypy
+réussis à ce stade ; aucune réussite pytest ni validation finale déduite ici.
+La stratégie distante autorisée ci-dessous reste applicable ; endpoint identifié par
+le parent : 3 diddifree-prod. Services/domaines de production hors périmètre.
+Publication de cette seule branche candidate autorisée pour test du SHA intégré exact.
+Le harness versionné cible encore le SHA F01 original : le parent doit fournir le SHA
+intégré exact dans le Compose soumis au test (fetch, assertion et marqueur), consigner
+ce Compose et utiliser une nouvelle stack/volume. Ne pas tester implicitement une branche.
+QA indépendante doit revalider ce SHA avant acceptation F01 ; main reste inchangé.
+Tout changement CORS ultérieur par l'Architect imposera une nouvelle revalidation.
+
+## Historique stratégie distante — état transmis le 2026-11-12
 
 Données communiquées par l'orchestrateur, non remesurées ni reproduites par cette mission documentaire ; elles actualisent le suivi historique conservé ci-dessous.
 
@@ -12,9 +30,30 @@ Données communiquées par l'orchestrateur, non remesurées ni reproduites par c
 
 Mission présente : Architect documentaire, branche `docs/deferred-container-tests`, worktree `worktrees/test-strategy` ; ownership limité à `plan.md`, `docs/contracts/verification.md` et ce suivi. Aucun code, infrastructure, `.env`, accès distant ou changement de stack ; aucun merge/push. Ce suivi ne remplace pas les rapports QA.
 
-## Historique A01 — état avant revue, conservé
+## Historique remise F01 — corrigé, réexamen QA alors en attente
 
-Les mentions de prochaine action, de HEAD et de blocages ci-dessous décrivent la remise A01 d'origine, pas l'état courant.
+Mise à jour Backend F01 autorisée le 2026-11-12. A01 : **VALIDÉ par QA** au candidat
+`e7a7b2c`, rapport `42c9a9f`, fusion main `9ae4a0d607f5a048ecf64c2ad095fd162a079e57`.
+F01 : QA `4b823ce` a bloqué le candidat `d734912` pour CODE-01 et deux blocages environnementaux.
+CODE-01 corrigé par Backend, **réexamen QA en attente**, aucune auto-validation.
+SHA correction testé : `7571f40f6f2e2be7d2f7f9c5fd129b537233c9af`.
+
+Compteurs : Ruff/Mypy/diff verts ; 51 tests unitaires réussis, dont 6 régressions encodage JSON ;
+2 tests PostgreSQL en erreur explicite faute de `TEST_DATABASE_URL`, 0 skip.
+Suite complète : 51 réussis, 2 erreurs, sortie 1. 25 fichiers Python, maximum 92 lignes.
+7 commandes de contrôle : 4 sorties 0, 3 sorties 1 (DB seule, suite complète, sync offline check).
+Installation complète bloquée aussi par espace disque E: insuffisant : 50 paquets locaux,
+PyAV verrouillé mais non installé. Ce n'est pas une installation complète validée.
+
+Reprise : libérer l'espace nécessaire sous responsabilité du propriétaire, fournir une PostgreSQL
+de test locale autorisée, relancer sync verrouillé et tous les contrôles ; QA doit réexaminer CODE-01.
+Commandes exactes, microcommits, ownership, limites et journal dans [F01](missions/F01.md).
+F02 et toutes les suites **non commencées**. Aucun merge/push/déploiement par F01.
+
+## Archive de la remise auteur A01 avant revue (historique)
+
+Le texte ci-dessous décrit la remise initiale ; son ancien état « non validé » est remplacé
+par le verdict et la fusion A01 ci-dessus. Ses preuves historiques restent conservées.
 
 Date : 2026-11-12. Exécutant : Architect. Worktree : E:/Dev/nianzeuhub-main/nianzeuhub-main/worktrees/A01. Branche : docs/a01-architecture. Base : 2d64a56bc9f8e6c48b8bf994bfbf6ab9b122b2d7. Aucun code applicatif, frontend, fusion, push ou déploiement effectué. Ne pas démarrer F01 avant QA indépendante positive et fusion A01 par responsable habilité.
 
