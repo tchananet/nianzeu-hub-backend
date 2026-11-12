@@ -21,6 +21,11 @@ from app.modules.identity.limits import IdentityLimits
 from app.modules.identity.passwords import Passwords
 from app.modules.identity.principal import IdentityPrincipalResolver
 from app.modules.identity.service import IdentityService
+from app.modules.portfolio.access import PortfolioAccess
+from app.modules.portfolio.context import build_context
+from app.modules.portfolio.minio_client import build_client
+from app.modules.portfolio.minio_storage import MinioStorage
+from app.modules.portfolio.wiring import build_module
 from app.modules.profiles import routes as profiles_routes
 from app.modules.profiles.access import ProfileAccess
 from app.modules.profiles.service import ProfilesService
@@ -34,9 +39,14 @@ def build_routers(settings: Settings, engine: Engine) -> list[APIRouter]:
     identity = IdentityService(factory, Passwords())
     resolver = IdentityPrincipalResolver(identity, browser)
     access = ProfileAccess(resolver, browser, factory, secret)
+    # A dedicated storage client: portfolio streams file content, so it needs a far
+    # longer read timeout than the short one the readiness probe depends on.
+    storage = MinioStorage(build_client(settings), settings.storage_public_endpoint)
+    portfolio = build_module(build_context(factory, storage, settings))
     return [
         identity_routes.create_router(identity, IdentityLimits(factory, secret), browser),
         profiles_routes.create_router(ProfilesService(factory), ViewsService(factory), access),
         contact_routes.create_router(ContactService(factory), access),
         discovery_routes.create_router(DiscoveryService(factory), access),
+        *portfolio.routers(PortfolioAccess(resolver, factory, secret)),
     ]
