@@ -1,0 +1,92 @@
+services:
+  api:
+    build: {context: ., target: runtime}
+    environment: &app-env
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:?required}
+      APP_DATABASE_URL: postgresql+psycopg://app:${POSTGRES_PASSWORD:?required}@db/${POSTGRES_DB:-app}
+      APP_STORAGE_ENDPOINT: http://minio:9000
+      APP_STORAGE_PUBLIC_ENDPOINT: ${APP_STORAGE_PUBLIC_ENDPOINT:?required}
+      APP_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:?required}
+      APP_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?required}
+      APP_QUARANTINE_BUCKET: quarantine
+      APP_VALIDATED_BUCKET: validated
+      APP_FRONTEND_ORIGIN: ${APP_FRONTEND_ORIGIN:?required}
+      APP_QUOTA_HMAC_SECRET: ${APP_QUOTA_HMAC_SECRET:?required}
+      APP_SECURE_COOKIES: ${APP_SECURE_COOKIES:-true}
+    ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+      minio: {condition: service_healthy}
+      buckets: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=20)"]
+      interval: 30s
+      timeout: 25s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    command: [postgres, -c, max_connections=40]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U app -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: [server, /data, --console-address, ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?required}
+    ports: ["127.0.0.1:${STORAGE_PORT:-9000}:9000"]
+    volumes: ["minio-data:/data"]
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:9000/minio/health/ready]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  buckets:
+    build: {context: ., target: runtime}
+    environment: *app-env
+    command: [python, -c, "from app.main import initialize_buckets; initialize_buckets()"]
+    depends_on:
+      minio: {condition: service_healthy}
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+  tests:
+    profiles: [test]
+    build: {context: ., target: test}
+    command: [pytest, -p, "no:cacheprovider", tests/infra]
+    environment:
+      <<: *app-env
+      F02_STACK_TEST: "1"
+      F02_API_URL: http://api:8000
+    depends_on:
+      api: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+  core-tests:
+    extends: tests
+    network_mode: service:db
+    command: [pytest, -p, "no:cacheprovider"]
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://app:${POSTGRES_PASSWORD:?required}@127.0.0.1/${POSTGRES_DB:-app}
+volumes:
+  postgres-data:
+  minio-data:
