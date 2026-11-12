@@ -7,6 +7,7 @@ blocks loudly rather than reporting a pass.
 
 import os
 from collections.abc import Iterator
+from itertools import count
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,6 +16,9 @@ from sqlalchemy import make_url
 from app.main import create_app
 
 ORIGIN = "https://diddifree.com"
+# Each test is a distinct visitor: the register quota is 5/hour/IP, so sharing one
+# address across tests would exhaust it and mask what is being verified.
+_VISITORS = count(11)
 INTENT = {"Origin": ORIGIN, "X-Auth-Intent": "session", "Content-Type": "application/json"}
 
 
@@ -49,6 +53,7 @@ def environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     environment(monkeypatch)
+    visitor = f"203.0.113.{next(_VISITORS) % 240 + 11}"
     with TestClient(create_app(), base_url="https://api.diddifree.com",
-                    client=("203.0.113.9", 51000), raise_server_exceptions=False) as http:
+                    client=(visitor, 51000), raise_server_exceptions=False) as http:
         yield http

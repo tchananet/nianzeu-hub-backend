@@ -24,7 +24,10 @@ def test_keyword_is_case_insensitive_and_keeps_wildcards_literal(discovery_db):
     factory, seeded = discovery_db
     assert sorted(names(seeded, search(factory, q="aDa"))) == ["ada", "alan"]
     assert sorted(names(seeded, search(factory, q="100%"))) == ["grace"]
-    for injection in ["%", "_", BACKSLASH, f"{MARKER}%", "' OR 1=1 --"]:
+    # A lone % must match only the seed that really contains one. Treated as a
+    # wildcard it would have matched every seed, so this is the stronger assertion.
+    assert sorted(names(seeded, search(factory, q="%"))) == ["grace"]
+    for injection in ["_", BACKSLASH, f"{MARKER}%", "' OR 1=1 --"]:
         assert search(factory, q=injection).total == 0, injection
 
 
