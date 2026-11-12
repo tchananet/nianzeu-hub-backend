@@ -14,13 +14,17 @@ Document de suivi courant. Les rapports de revue indépendants restent dans `doc
 | M02 migration profils et contacts | fusionnée | tests `tests/migrations/profiles` |
 | P01 profils et contact | fusionnée | `docs/missions/P01.md` |
 | M03 portfolio et index recherche | fusionnée | `docs/missions/M03.md` |
-| R01 recherche publique | en cours | — |
-| O01 portfolio | en cours | — |
-| B01 sauvegarde | en cours | — |
-| D01 runbook de déploiement | en cours | — |
-| X01 assemblage des routes | à faire | dépend de R01 et O01 |
-| Q01 sécurité indépendante | à faire | dépend de X01 |
-| Q02 charge | à faire | dépend d'un VPS de test autorisé |
+| R01 recherche publique | fusionnée | `docs/missions/R01.md` |
+| O01 portfolio | fusionnée, couverture incomplète | `docs/missions/O01.md` |
+| X01 assemblage des routes | fusionnée | `docs/missions/X01.md` |
+| B01 sauvegarde | fusionnée, non éprouvée | `docs/missions/B01.md`, `docs/backup.md` |
+| D01 runbook de déploiement | fusionnée | `docs/deployment.md`, `docs/qa/release.md` |
+| Q01 sécurité indépendante | partielle | `docs/qa/security.md` |
+| Q02 charge | à faire | bloquée : aucun VPS de test autorisé |
+
+État des contrôles : `ruff` et `mypy` passent (104 fichiers source). 389 tests passent en
+local ; 241 sont bloqués faute de PostgreSQL accessible depuis ce poste. Dernière campagne
+distante sur PostgreSQL réel : 411 réussis, 2 ignorés, 2 échecs, tous deux corrigés depuis.
 
 ## Environnement de vérification
 
