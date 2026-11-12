@@ -9,7 +9,7 @@ Date : 2026-11-12. Exécutant : Architect. Worktree : E:/Dev/nianzeuhub-main/nia
 | 0fea0f5d2b416caf476d1a27375a62b83ab86570 | Architecture et ownership ; AGENTS.md copié sans modification |
 | d4cb90ff8042c5baadf0ace6d01c192aa1fb2828 | Six contrats v1 : HTTP, identité, profils/contact/recherche, portfolio, données/migrations, vérification |
 
-Le commit qui ajoute ce suivi est le candidat final : résoudre son SHA exact avec `git rev-parse HEAD`, également fourni dans la remise conversationnelle. Pas d'auto-référence fictive au SHA du document lui-même. QA doit relire ce candidat entier, pas seulement le commit de contrats.
+Le HEAD remis, incluant ce suivi et son dernier diagnostic, est le candidat final : résoudre son SHA exact avec `git rev-parse HEAD`, également fourni dans la remise conversationnelle. Pas d'auto-référence fictive au SHA du document lui-même. QA doit relire ce candidat entier, pas seulement le commit de contrats.
 
 Fichiers à examiner : [architecture](architecture.md), [ownership](ownership.md), [HTTP](contracts/http.md), [identité](contracts/identity.md), [profils](contracts/profiles.md), [portfolio](contracts/portfolio.md), [données](contracts/data.md), [vérification](contracts/verification.md), [AGENTS](../AGENTS.md), ce suivi. README et plan non modifiés. Specs originales lues à ../../specs.md depuis racine A01 ; baseline documentaire, aucune compatibilité parfaite avec code existant affirmée.
 
@@ -34,6 +34,8 @@ Le suivi ajoute un dixième fichier documentaire ; contrôler à nouveau le cand
 ## Environnement et blocages transmis
 
 Préflight communiqué par QA : Python 3.13 et uv disponibles ; python par défaut 3.11 à éviter. Docker local inaccessible/ne démarre pas, diagnostic hors sandbox en cours, non résolu ici. Ni Docker ni VPS validés. En F01, pas de Dockerfile/Compose attendu : commandes Compose sans objet ; tests DB restent bloqués si aucune PostgreSQL locale accessible, sans substituer SQLite ni compter skips comme succès. Les tests unitaires disponibles peuvent avancer, mais la preuve DB est nécessaire à la validation F01.
+
+Dernier retour QA à la remise : service Docker local stopped ; Start-Service échoue faute de droits Windows ; utilisateur notifié en async ; aucun PostgreSQL local trouvé. Les tests DB F01 sont donc actuellement **bloqués**, et non simplement en attente de vérification de disponibilité. Ce diagnostic est transmis par QA, pas exécuté par Architect.
 
 ## Prochaine action autorisée
 
