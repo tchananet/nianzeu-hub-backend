@@ -24,9 +24,12 @@ def test_keyword_is_case_insensitive_and_keeps_wildcards_literal(discovery_db):
     factory, seeded = discovery_db
     assert sorted(names(seeded, search(factory, q="aDa"))) == ["ada", "alan"]
     assert sorted(names(seeded, search(factory, q="100%"))) == ["grace"]
-    # A lone % must match only the seed that really contains one. Treated as a
-    # wildcard it would have matched every seed, so this is the stronger assertion.
-    assert sorted(names(seeded, search(factory, q="%"))) == ["grace"]
+    # A lone % must not act as a wildcard: of this test's seeds, only the one whose
+    # bio really contains "100%" may match. Every suite shares one database, so rows
+    # seeded elsewhere are ignored -- this asserts the escaping, not the table size.
+    wildcard = [name for name in names(seeded, search(factory, q="%"))
+                if not name.startswith("foreign:")]
+    assert sorted(wildcard) == ["grace"]
     for injection in ["_", BACKSLASH, f"{MARKER}%", "' OR 1=1 --"]:
         assert search(factory, q=injection).total == 0, injection
 
