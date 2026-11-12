@@ -19,6 +19,7 @@ def test_projection_masks_private_values_and_flags():
 
 @pytest.mark.parametrize("changes", [
     {"phone": "699000000"}, {"phone": "+012345678"}, {"phone": "+237 699000000"},
+    {"phone": " +237699000000"},
     {"whatsapp_visible": True}, {"email_visible": 1}, {"useInternalForm": True},
 ])
 def test_invalid_contact(changes):
