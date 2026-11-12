@@ -1,4 +1,20 @@
-# Reprise A01 — prêt pour revue QA, non validé
+# Suivi global — validations F01 bloquées
+
+## État courant transmis le 2026-11-12
+
+Données communiquées par l'orchestrateur, non remesurées ni reproduites par cette mission documentaire ; elles actualisent le suivi historique conservé ci-dessous.
+
+- A01 : revue QA `e7a7b2c`, fusion `9ae4a0d`.
+- F01 : branche `feat/f01-foundations`, SHA `6d3cd45`, revue QA `7d49b65` ; 51 tests réussis, 2 erreurs DB, 0 skip. Code JSON corrigé ; blocages restants : DB et PyAV lié à l'espace disque. F01 non validée, fusion bloquée.
+- E: libre : mesure actuelle transmise de 26 MB ; aucune nouvelle mesure effectuée ici.
+- Choix utilisateur : tests Docker plus tard ou directement sur stack Portainer `diddifree` dédiée et isolée de test ; Docker local reste une option. URL d'accès et endpoint inconnus, aucun accès acquis ni environnement validé. Production interdite.
+- Reprise : identifier la cible de test, vérifier accès et isolation avant exécution ; obtenir la preuve PostgreSQL réelle obligatoire (pas SQLite), résoudre le blocage PyAV/disque, puis faire reproduire les contrôles applicables par QA au SHA exact. Tout report reste bloquant, sans succès anticipé ni levée des conditions de fusion ; F02 attend la fusion F01 et conserve son exigence de reproductibilité locale.
+
+Mission présente : Architect documentaire, branche `docs/deferred-container-tests`, worktree `worktrees/test-strategy` ; ownership limité à `plan.md`, `docs/contracts/verification.md` et ce suivi. Aucun code, infrastructure, `.env`, accès distant ou changement de stack ; aucun merge/push. Ce suivi ne remplace pas les rapports QA.
+
+## Historique A01 — état avant revue, conservé
+
+Les mentions de prochaine action, de HEAD et de blocages ci-dessous décrivent la remise A01 d'origine, pas l'état courant.
 
 Date : 2026-11-12. Exécutant : Architect. Worktree : E:/Dev/nianzeuhub-main/nianzeuhub-main/worktrees/A01. Branche : docs/a01-architecture. Base : 2d64a56bc9f8e6c48b8bf994bfbf6ab9b122b2d7. Aucun code applicatif, frontend, fusion, push ou déploiement effectué. Ne pas démarrer F01 avant QA indépendante positive et fusion A01 par responsable habilité.
 

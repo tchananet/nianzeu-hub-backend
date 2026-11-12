@@ -22,7 +22,7 @@
 - Agent `qa` indépendant de l’auteur : revue, reproduction des contrôles, preuve et verdict `VALIDÉ` ou `BLOQUÉ`.
 - Chaque mission possède une branche distincte `docs/<id>-<objet>`, `feat/<id>-<objet>` ou `test/<id>-<objet>`, issue de `main` propre.
 - Chaque agent travaille dans un worktree distinct sous `E:/Dev/nianzeuhub-main/nianzeuhub-main/worktrees/<id>`.
-- Aucun fichier, clone, worktree ou artefact de mission hors de ce workspace ; aucun changement frontend.
+- Aucun fichier, clone, worktree ou artefact de mission hors de ce workspace, sauf exécution des validations sur la stack de test isolée autorisée ci-dessous ; aucun changement frontend.
 - Avant départ : fiche de mission avec ID, propriétaire, chemins exclusifs, livrables, critères, dépendances et SHA de base.
 - Les chemins partagés ont un propriétaire unique ; tout transfert d’ownership est acté avant modification.
 - Micro-commits cohérents et testés : une intention par commit, aucun mélange avec une autre mission, aucun secret.
@@ -42,7 +42,7 @@ Les chemins sont relatifs au dépôt `backend` ; les tests d’un module apparti
 |---|---|---|---|
 | A01 / architect | `docs/architecture.md`, `docs/contracts/`, `docs/ownership.md` | Contrats versionnés : routes, erreurs, cookies/sessions, autorisations, schéma, filtres/pagination, uploads/publication, reset désactivé ; registre des migrations ; seuils QA et risques résolus ; aucune implémentation | Aucune ; première mission |
 | F01 / backend | `pyproject.toml`, lock, `app/core/`, `app/shared/`, `tests/core/` | Configuration validée, accès PostgreSQL, ports stockage/email, erreurs explicites, tests ciblés verts et exceptions de taille documentées | A01 fusionnée |
-| F02 / backend | `Dockerfile`, `docker-compose.yml`, `.env.example`, `tests/infra/` | Build et démarrage local reproductibles, healthchecks, volumes persistants, aucun secret ; pas de déploiement VPS | F01 fusionnée |
+| F02 / backend | `Dockerfile`, `docker-compose.yml`, `.env.example`, `tests/infra/` | Build et démarrage local reproductibles, healthchecks, volumes persistants, aucun secret ; validations exécutables en Docker local ou sur stack Portainer de test dédiée et isolée autorisée ; production interdite | F01 fusionnée |
 | I01 / backend | `app/modules/identity/`, `tests/identity/` | Inscription talent, login/logout/me ; hash robuste, sessions révocables, cookies sûrs, protection CSRF adaptée, limitation login et tests d’accès ; reset explicitement indisponible | F02 et M01 fusionnées |
 | P01 / backend | `app/modules/profiles/`, `app/modules/contact/`, `tests/profiles/`, `tests/contact/` | CRUD propriétaire ; expériences/certifications/skills ; lecture anonyme ; visibilité contacts respectée ; accès tiers refusé | I01 et M02 fusionnées |
 | M01 / backend désigné | `migrations/`, `alembic.ini` : initialisation et identité | Upgrade sur base vide, contraintes identité, aller-retour de migration testé en base jetable | F02 fusionnée |
@@ -71,6 +71,8 @@ Les chemins sont relatifs au dépôt `backend` ; les tests d’un module apparti
 - A01 et les missions documentaires : revue des décisions, liens, cohérence des dépendances et `git diff --check` ; tests applicatifs sans objet, explicitement signalés.
 - Implémentation : `ruff check .`, `mypy app`, `pytest`, `docker compose config` et `docker compose build`, plus tests ciblés et migrations applicables.
 - QA consigne les commandes réellement exécutées et leurs résultats ; aucun succès anticipé, contrôle indisponible signalé comme blocage.
+- Tests Docker reportables à plus tard ou exécutables directement sur une stack Portainer `diddifree` dédiée et isolée de test ; URL d'accès et endpoint inconnus, accès et isolation à vérifier avant exécution. Aucune modification de production autorisée.
+- Le report ne vaut ni test vert ni levée des conditions de fusion : preuve sur PostgreSQL réel obligatoire (jamais SQLite), contrôles applicables réussis et QA indépendante positive requis. État courant et historique : `docs/progress.md`.
 - Charge : A01 fixe durée, montée en charge, mélange de parcours et seuils p95/erreurs ; Q02 relève la configuration exacte du VPS et le SHA testé.
 - Sauvegardes : QA restaure base et objets dans un environnement isolé, vérifie cohérence et accès aux fichiers ; un simple export ne suffit pas.
 - Livraison MVP conditionnée aux preuves fonctionnelles, sécurité, charge et restauration ; déploiement ultérieur soumis à une mission explicitement autorisée.

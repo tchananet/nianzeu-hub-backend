@@ -4,7 +4,7 @@ QA indépendant inscrit SHA exact, environnement, commandes réellement exécut�
 
 ## Commandes applicables
 
-Toutes les commandes sont exécutées à la racine du worktree de mission, dans le workspace. Python QA disponible 3.13 via uv ; ne pas utiliser python par défaut 3.11. F01 doit fournir pyproject.toml et uv.lock, groupes de développement Ruff/Mypy/Pytest, outils validation et adaptateurs stockage prévus par contrats. Caches/venv/artefacts de mission sous workspace ; aucune installation de skill.
+Les commandes sont exécutées à la racine du worktree de mission, dans le workspace, ou, pour les validations distantes, sur la stack de test autorisée décrite ci-dessous au SHA remis. Python QA disponible 3.13 via uv ; ne pas utiliser python par défaut 3.11. F01 doit fournir pyproject.toml et uv.lock, groupes de développement Ruff/Mypy/Pytest, outils validation et adaptateurs stockage prévus par contrats. Caches/venv/artefacts locaux de mission sous workspace ; aucune installation de skill.
 
 | Stade | Commandes et conditions |
 |---|---|
@@ -17,9 +17,11 @@ Toutes les commandes sont exécutées à la racine du worktree de mission, dans 
 | R01 / O01 | uv run --python 3.13 pytest tests/discovery ou tests/portfolio respectivement |
 | X01 / Q01 | uv run --python 3.13 pytest tests/api puis tests/security au stade où ce répertoire existe |
 
-À chaque mission implémentée : Ruff/Mypy, tests ciblés puis suite existante entière (`uv run --python 3.13 pytest`) ; checks Compose à partir de F02 seulement. Aucun test d'un module futur absent n'est demandé. À F01, config/build Compose sont **sans objet**, pas en échec : ces fichiers appartiennent F02. Tests DB F01 requièrent PostgreSQL de test fourni localement, fixtures de schéma isolées ; pas de remplacement SQLite pour prétendre tester PostgreSQL.
+À chaque mission implémentée : Ruff/Mypy, tests ciblés puis suite existante entière (`uv run --python 3.13 pytest`) ; checks Compose à partir de F02 seulement. Aucun test d'un module futur absent n'est demandé. À F01, config/build Compose sont **sans objet**, pas en échec : ces fichiers appartiennent F02. Tests DB F01 requièrent PostgreSQL réel de test, local ou sur la stack de test autorisée, fixtures de schéma isolées ; pas de remplacement SQLite pour prétendre tester PostgreSQL.
 
-Docker local ne démarre pas au dernier préflight communiqué ; diagnostic hors sandbox en cours, non résolu dans A01. Si aucune base PostgreSQL locale accessible : tests DB F01 **BLOQUÉS**, commandes unitaires possibles à exécuter séparément, revue F01 non validée tant que preuve DB manque. Même règle pour Docker F02 et stockage O01. Ne pas faire passer des skips d'intégration pour une suite complète verte. Aucun VPS de test ni capacité Docker validé par ces documents.
+Choix utilisateur : reporter les tests Docker ou les exécuter en Docker local ou directement sur une stack Portainer `diddifree` dédiée et isolée de test. URL d'accès et endpoint inconnus ; accès non acquis. Avant toute exécution distante, identifier la cible et vérifier l'accès et l'isolation des données, volumes, réseaux et secrets de test vis-à-vis de la production. Aucune modification de production autorisée. F02 conserve l'exigence de build et démarrage local reproductibles ; les validations peuvent s'exécuter sur cette stack autorisée, avec preuves des contrôles applicables (configuration, build, santé, persistance et tests), SHA et commandes/actions exactes consignés par QA.
+
+Sans PostgreSQL de test accessible et preuve réelle : tests DB F01 **BLOQUÉS**, commandes unitaires possibles séparément, revue F01 non validée. Même règle pour Docker F02 et stockage O01. Les contrôles reportés restent à exécuter et bloquent la validation et la fusion ; ni skips ni résultats partiels ne constituent une suite verte. Aucun VPS, accès Portainer ou capacité Docker validé par ces documents ; état transmis et historique dans `docs/progress.md`.
 
 ## Matrice de scénarios
 
