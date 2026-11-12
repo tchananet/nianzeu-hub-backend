@@ -35,7 +35,7 @@ info "row counts verified for ${#BACKUP_TABLES[@]} table(s)"
 
 if ! pg_table_exists "$WORK" portfolio_items; then
   [ "${VERIFY_ALLOW_NO_PORTFOLIO:-no}" = yes ] ||
-    die "portfolio_items is absent: object verification impossible; set VERIFY_ALLOW_NO_PORTFOLIO=yes only for a pre-O01 schema"
+    die "portfolio_items is absent: object verification impossible;"         "set VERIFY_ALLOW_NO_PORTFOLIO=yes only for a pre-O01 schema"
   warn "portfolio_items absent: object/sha256 verification SKIPPED by explicit operator override"
   info "verification finished in $(( $(epoch_now) - STARTED ))s with the portfolio check skipped"
   exit 0

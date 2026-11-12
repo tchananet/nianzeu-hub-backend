@@ -24,15 +24,20 @@ info "verifying set integrity in $SET_DIR"
 
 MANIFEST="$SET_DIR/manifest.json"
 for key in set_id alembic_revision db_dump_sha256 objects_tar_sha256 \
-  quarantine_bucket validated_bucket; do
+  validated_bucket quarantine_included; do
   manifest_get "$MANIFEST" "$key" >/dev/null
 done
-[ "$(manifest_get "$MANIFEST" quarantine_bucket)" = "${BUCKETS[0]}" ] ||
-  die "RESTORE_QUARANTINE_BUCKET must match the recorded bucket name"
 [ "$(manifest_get "$MANIFEST" validated_bucket)" = "$VALIDATED_BUCKET" ] ||
-  die "RESTORE_VALIDATED_BUCKET must match the recorded bucket name"
+  die "RESTORE_VALIDATED_BUCKET must match the bucket recorded in the manifest"
+# Buckets to recreate come from the set, not from the operator: restoring a
+# bucket the backup never captured would silently create an empty one.
+select_buckets "$(manifest_get "$MANIFEST" quarantine_included)"
+if [ "$QUARANTINE_INCLUDED" = 1 ]; then
+  [ "$(manifest_get "$MANIFEST" quarantine_bucket)" = "$QUARANTINE_BUCKET" ] ||
+    die "RESTORE_QUARANTINE_BUCKET must match the bucket recorded in the manifest"
+fi
 
-info "restoring set $(manifest_get "$MANIFEST" set_id) (consistency: $(manifest_get "$MANIFEST" consistency))"
+info "restoring set $(manifest_get "$MANIFEST" set_id)"      "(consistency: $(manifest_get "$MANIFEST" consistency))"
 decrypt_file "$SET_DIR/db.dump.enc" "$WORK/db.dump"
 ACTUAL="$(sha256_of "$WORK/db.dump")"
 [ "$ACTUAL" = "$(manifest_get "$MANIFEST" db_dump_sha256)" ] ||
@@ -55,7 +60,7 @@ tar --force-local -C "$WORK" -xf "$WORK/objects.tar"
 ( cd -- "$WORK" && sha256sum --quiet -c objects.sha256 ) ||
   die "object checksums do not match after extraction: the archive is unusable"
 
-ensure_buckets "$WORK"
+ensure_buckets "$WORK" "$QUARANTINE_BUCKET" "$VALIDATED_BUCKET"
 mirror_to_storage "$WORK"
 RESTORED="$(find "$WORK/objects" -type f | wc -l | tr -d ' ')"
 info "objects restored: $RESTORED into buckets ${BUCKETS[*]}"

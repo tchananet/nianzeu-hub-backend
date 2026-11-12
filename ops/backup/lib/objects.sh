@@ -21,10 +21,12 @@ mc_stream() {
   docker run "${base[@]}" -- "$MC_IMAGE" --config-dir /tmp/mc --no-color --quiet "$@"
 }
 
+# Both buckets must exist for the application to pass readiness, even when the
+# restored set carries objects for only one of them.
 ensure_buckets() {
-  local b
-  for b in "${BUCKETS[@]}"; do
-    mc_run "$1" mb --ignore-existing "s3/$b" || die "cannot create bucket $b"
+  local mount="$1" b; shift
+  for b in "$@"; do
+    mc_run "$mount" mb --ignore-existing "s3/$b" || die "cannot create bucket $b"
   done
 }
 

@@ -29,7 +29,7 @@ fi
 
 if command -v docker >/dev/null 2>&1; then
   # Placeholder values only: this renders the file, it never deploys it.
-  docker compose --env-file backup.env.example -f restore-stack.yaml     config --quiet || status=1
+  docker compose --env-file backup.env.example -f restore-stack.yaml config --quiet || status=1
 else
   printf 'docker not installed: restore-stack.yaml NOT validated (not a pass)\n'
 fi

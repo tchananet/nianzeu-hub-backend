@@ -13,7 +13,7 @@ Ce répertoire ne contient aucun secret ; toute valeur vient de l'environnement.
 | `restore-stack.yaml` | pile jetable PostgreSQL + MinIO isolée pour la répétition |
 | `backup.env.example` | gabarit d'environnement, placeholders uniquement |
 | `schedule.example` | crontab quotidien avec verrou partagé avec le nettoyage horaire |
-| `lib/` | fonctions par responsabilité : commun, config, crypto, pg, objets, gel, manifeste, schéma |
+| `lib/` | une responsabilité par fichier : commun, config, crypto, pg, objets, gel, manifeste |
 
 Prérequis hôte : `docker`, GNU `coreutils` (`sha256sum`, `date -u -d`, `du -sb`),
 `findutils` (`find -printf`), `tar`, `openssl`, `bash` ≥ 4.3.

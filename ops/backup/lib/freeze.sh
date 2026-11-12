@@ -20,7 +20,7 @@ freeze_begin() {
     return 0
   fi
   container_running "$BACKUP_API_CONTAINER" ||
-    die "API container $BACKUP_API_CONTAINER is not running: refusing a backup of an unknown service state"
+    die "API container $BACKUP_API_CONTAINER is not running:"         "refusing a backup of an unknown service state"
   FREEZE_STARTED_AT="$(epoch_now)"
   info "freezing mutations: stopping $BACKUP_API_CONTAINER"
   docker stop --time 30 -- "$BACKUP_API_CONTAINER" >/dev/null ||
@@ -38,5 +38,5 @@ freeze_end() {
   FREEZE_SECONDS=$(( $(epoch_now) - FREEZE_STARTED_AT ))
   info "releasing mutations: starting $BACKUP_API_CONTAINER after ${FREEZE_SECONDS}s"
   docker start -- "$BACKUP_API_CONTAINER" >/dev/null ||
-    die "CRITICAL: $BACKUP_API_CONTAINER could not be restarted; the service stays down until an operator acts"
+    die "CRITICAL: $BACKUP_API_CONTAINER could not be restarted;"         "the service stays down until an operator acts"
 }

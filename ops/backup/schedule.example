@@ -6,7 +6,7 @@
 # `set -a` exports it; the scripts read nothing else.
 # A non-zero exit must page an operator: cron mail alone is not monitoring.
 
-30 2 * * * /usr/bin/flock -n /run/nianzeuhub-backup.lock /bin/bash -lc 'set -a; . /etc/nianzeuhub/backup.env; set +a; /opt/nianzeuhub/ops/backup/backup.sh' >> /var/log/nianzeuhub-backup.log 2>&1
+30 2 * * * /usr/bin/flock -n /run/nianzeuhub-backup.lock /bin/bash -lc 'set -a; . /etc/nianzeuhub/backup.env; set +a; bash /opt/nianzeuhub/ops/backup/backup.sh' >> /var/log/nianzeuhub-backup.log 2>&1
 
 # The hourly portfolio cleanup (docs/contracts/portfolio.md) must not run while
 # a backup is in progress: share the same lock file.

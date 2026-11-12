@@ -33,8 +33,12 @@ trap cleanup EXIT
 
 STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 info "backup set $SET_ID starting"
+# Warm pass while the service is still live. Final objects are immutable and
+# keys are never reused, so a pre-copy can only be stale by missing objects
+# written afterwards; the post-dump pass below closes that gap and keeps the
+# freeze window down to one incremental mirror.
+mirror_from_storage "$STAGE"
 freeze_begin
-[ "$CONSISTENCY_MODE" = frozen-api ] || mirror_from_storage "$STAGE"
 
 ALEMBIC_REVISION="$(pg_alembic_revision "$STAGE")"
 PG_VERSION="$(pg_server_version "$STAGE")"
@@ -54,7 +58,7 @@ freeze_end
 
 VALIDATED_OBJECTS="$(find "$STAGE/objects/$VALIDATED_BUCKET" -type f | wc -l | tr -d ' ')"
 [ "$VALIDATED_OBJECTS" -ge "$EXPECTED_OBJECTS" ] ||
-  die "captured $VALIDATED_OBJECTS validated objects for $EXPECTED_OBJECTS referenced rows: incomplete backup"
+  die "captured $VALIDATED_OBJECTS validated object(s) for $EXPECTED_OBJECTS"       "referenced row(s): incomplete backup"
 ( cd -- "$STAGE" && find objects -type f -print0 | LC_ALL=C sort -z |
   xargs -0 -r sha256sum > objects.sha256 )
 tar --force-local -C "$STAGE" -cf "$STAGE/objects.tar" objects objects.sha256
@@ -76,7 +80,8 @@ manifest_write "$SET_DIR/manifest.json" \
   api_image "$(docker_container_image "${BACKUP_API_CONTAINER:-none}")" \
   pg_server_version "$PG_VERSION" pg_image "$(docker_image_digest "$PG_IMAGE")" \
   mc_image "$(docker_image_digest "$MC_IMAGE")" database "$PGDATABASE" \
-  quarantine_bucket "${BUCKETS[0]}" validated_bucket "$VALIDATED_BUCKET" \
+  quarantine_bucket "$QUARANTINE_BUCKET" validated_bucket "$VALIDATED_BUCKET" \
+  quarantine_included "$QUARANTINE_INCLUDED" \
   objects_total "$(object_count "$STAGE")" objects_bytes "$(object_bytes "$STAGE")" \
   validated_objects "$VALIDATED_OBJECTS" referenced_objects "$EXPECTED_OBJECTS" \
   db_dump_sha256 "$DB_SHA" objects_tar_sha256 "$TAR_SHA"

@@ -5,6 +5,7 @@ set -euo pipefail
 : "${BACKUP_PG_IMAGE:=postgres:16-alpine}"
 : "${BACKUP_MC_IMAGE:=quay.io/minio/mc:latest}"
 : "${BACKUP_FREEZE:=1}"
+: "${BACKUP_INCLUDE_QUARANTINE:=0}"
 : "${BACKUP_KEEP_DAILY:=7}"
 : "${BACKUP_KEEP_WEEKLY:=4}"
 : "${BACKUP_PGHOST:=db}"
@@ -30,10 +31,24 @@ load_backup_config() {
   NETWORK="$BACKUP_DOCKER_NETWORK"
   PGHOST="$BACKUP_PGHOST"; PGUSER="$BACKUP_PGUSER"; PGDATABASE="$BACKUP_PGDATABASE"
   export PGPASSWORD="$BACKUP_PGPASSWORD"
-  export MC_HOST_s3="${BACKUP_S3_SCHEME}://${BACKUP_S3_ACCESS_KEY}:${BACKUP_S3_SECRET_KEY}@${BACKUP_S3_HOST}"
+  export MC_HOST_s3="${BACKUP_S3_SCHEME}://${BACKUP_S3_ACCESS_KEY}"
+  MC_HOST_s3="${MC_HOST_s3}:${BACKUP_S3_SECRET_KEY}@${BACKUP_S3_HOST}"
   PASSPHRASE="$BACKUP_PASSPHRASE"
-  BUCKETS=("$BACKUP_QUARANTINE_BUCKET" "$BACKUP_VALIDATED_BUCKET")
+  QUARANTINE_BUCKET="$BACKUP_QUARANTINE_BUCKET"
   VALIDATED_BUCKET="$BACKUP_VALIDATED_BUCKET"
+  select_buckets "$BACKUP_INCLUDE_QUARANTINE"
+}
+
+# The validated bucket is always captured: it holds the immutable final objects
+# referenced by portfolio_items.object_key. Quarantine is opt-in only; see
+# docs/backup-scope.md for why losing in-flight uploads is accepted.
+select_buckets() {
+  case "$1" in
+    0) BUCKETS=("$VALIDATED_BUCKET") ;;
+    1) BUCKETS=("$QUARANTINE_BUCKET" "$VALIDATED_BUCKET") ;;
+    *) die "include-quarantine flag must be 0 or 1, got: $1" ;;
+  esac
+  QUARANTINE_INCLUDED="$1"
 }
 
 # Restore and verification always target a throwaway stack, never production.
@@ -48,19 +63,21 @@ load_restore_config() {
   : "${RESTORE_S3_HOST:=restore-minio:9000}"
   : "${RESTORE_S3_SCHEME:=http}"
   [ "${RESTORE_CONFIRM_ISOLATED:-}" = "yes" ] ||
-    die "set RESTORE_CONFIRM_ISOLATED=yes only for a throwaway stack; production restore is not supported here"
+    die "set RESTORE_CONFIRM_ISOLATED=yes only for a throwaway stack;"         "restoring into production is not supported here"
   if [ -n "${BACKUP_DB_CONTAINER:-}" ] && [ "$RESTORE_DB_CONTAINER" = "$BACKUP_DB_CONTAINER" ]; then
-    die "RESTORE_DB_CONTAINER equals BACKUP_DB_CONTAINER: refusing to write into the production database"
+    die "RESTORE_DB_CONTAINER equals BACKUP_DB_CONTAINER:"         "refusing to write into the production database"
   fi
   if [ -n "${BACKUP_DOCKER_NETWORK:-}" ] && [ "$RESTORE_DOCKER_NETWORK" = "$BACKUP_DOCKER_NETWORK" ]; then
-    die "RESTORE_DOCKER_NETWORK equals BACKUP_DOCKER_NETWORK: refusing to reach production services"
+    die "RESTORE_DOCKER_NETWORK equals BACKUP_DOCKER_NETWORK:"         "refusing to reach production services"
   fi
   PG_IMAGE="$BACKUP_PG_IMAGE"; MC_IMAGE="$BACKUP_MC_IMAGE"
   NETWORK="$RESTORE_DOCKER_NETWORK"
   PGHOST="$RESTORE_PGHOST"; PGUSER="$RESTORE_PGUSER"; PGDATABASE="$RESTORE_PGDATABASE"
   export PGPASSWORD="$RESTORE_PGPASSWORD"
-  export MC_HOST_s3="${RESTORE_S3_SCHEME}://${RESTORE_S3_ACCESS_KEY}:${RESTORE_S3_SECRET_KEY}@${RESTORE_S3_HOST}"
+  export MC_HOST_s3="${RESTORE_S3_SCHEME}://${RESTORE_S3_ACCESS_KEY}"
+  MC_HOST_s3="${MC_HOST_s3}:${RESTORE_S3_SECRET_KEY}@${RESTORE_S3_HOST}"
   PASSPHRASE="$BACKUP_PASSPHRASE"
-  BUCKETS=("$RESTORE_QUARANTINE_BUCKET" "$RESTORE_VALIDATED_BUCKET")
+  QUARANTINE_BUCKET="$RESTORE_QUARANTINE_BUCKET"
   VALIDATED_BUCKET="$RESTORE_VALIDATED_BUCKET"
+  select_buckets 0
 }

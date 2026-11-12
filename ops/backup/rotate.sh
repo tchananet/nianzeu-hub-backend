@@ -64,4 +64,5 @@ for d in "${DROP[@]}"; do
     rm -rf -- "$BACKUP_ROOT/$d"
   fi
 done
-info "rotation done: ${#KEEP[@]} kept, ${#DROP[@]} $([ "$DRY_RUN" = 1 ] && printf 'selected' || printf 'deleted')"
+[ "$DRY_RUN" = 1 ] && VERB=selected || VERB=deleted
+info "rotation done: ${#KEEP[@]} kept, ${#DROP[@]} $VERB"
