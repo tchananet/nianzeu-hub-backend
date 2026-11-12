@@ -1,4 +1,36 @@
-# État global — A01 VALIDÉ, F01 corrigé / réexamen QA en attente / BLOQUÉ
+# Suivi global — candidat intégré F01, revalidation QA requise
+
+## Intégration candidate du 2026-11-12 — aucune fusion main
+
+Branche `test/f01-integration-remote`, worktree `worktrees/F01-INTEGRATION`,
+base main `86822068afe71d7a0116d2267c13785a6b64c1d2`.
+Intégration --no-ff de F01 `6d3cd45cb4f9b7685cbda06bf4ecaf9207d44c05`,
+puis du harness `a75fcfc1f88a3d3b1d8fafc6d1d09b2204d7cdd5`.
+Seul conflit résolu : ce suivi ; code applicatif et CORS inchangés.
+Le parent signale stack distante isolée 101 en cours : lock, PyAV, Ruff et Mypy
+réussis à ce stade ; aucune réussite pytest ni validation finale déduite ici.
+La stratégie distante autorisée ci-dessous reste applicable ; endpoint identifié par
+le parent : 3 diddifree-prod. Services/domaines de production hors périmètre.
+Publication de cette seule branche candidate autorisée pour test du SHA intégré exact.
+Le harness versionné cible encore le SHA F01 original : le parent doit fournir le SHA
+intégré exact dans le Compose soumis au test (fetch, assertion et marqueur), consigner
+ce Compose et utiliser une nouvelle stack/volume. Ne pas tester implicitement une branche.
+QA indépendante doit revalider ce SHA avant acceptation F01 ; main reste inchangé.
+Tout changement CORS ultérieur par l'Architect imposera une nouvelle revalidation.
+
+## Historique stratégie distante — état transmis le 2026-11-12
+
+Données communiquées par l'orchestrateur, non remesurées ni reproduites par cette mission documentaire ; elles actualisent le suivi historique conservé ci-dessous.
+
+- A01 : revue QA `e7a7b2c`, fusion `9ae4a0d`.
+- F01 : branche `feat/f01-foundations`, SHA `6d3cd45`, revue QA `7d49b65` ; 51 tests réussis, 2 erreurs DB, 0 skip. Code JSON corrigé ; blocages restants : DB et PyAV lié à l'espace disque. F01 non validée, fusion bloquée.
+- E: libre : mesure actuelle transmise de 26 MB ; aucune nouvelle mesure effectuée ici.
+- Choix utilisateur : tests Docker plus tard ou directement sur stack Portainer `diddifree` dédiée et isolée de test ; Docker local reste une option. URL d'accès et endpoint inconnus, aucun accès acquis ni environnement validé. Production interdite.
+- Reprise : identifier la cible de test, vérifier accès et isolation avant exécution ; obtenir la preuve PostgreSQL réelle obligatoire (pas SQLite), résoudre le blocage PyAV/disque, puis faire reproduire les contrôles applicables par QA au SHA exact. Tout report reste bloquant, sans succès anticipé ni levée des conditions de fusion ; F02 attend la fusion F01 et conserve son exigence de reproductibilité locale.
+
+Mission présente : Architect documentaire, branche `docs/deferred-container-tests`, worktree `worktrees/test-strategy` ; ownership limité à `plan.md`, `docs/contracts/verification.md` et ce suivi. Aucun code, infrastructure, `.env`, accès distant ou changement de stack ; aucun merge/push. Ce suivi ne remplace pas les rapports QA.
+
+## Historique remise F01 — corrigé, réexamen QA alors en attente
 
 Mise à jour Backend F01 autorisée le 2026-11-12. A01 : **VALIDÉ par QA** au candidat
 `e7a7b2c`, rapport `42c9a9f`, fusion main `9ae4a0d607f5a048ecf64c2ad095fd162a079e57`.
