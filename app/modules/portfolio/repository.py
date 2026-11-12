@@ -30,12 +30,25 @@ def lock_user(db: Session, user_id: UUID) -> None:
         raise AppError("AUTH_REQUIRED", 401, "Authentication required")
 
 
-def owner_profile_id(db: Session, user_id: UUID, lock: bool = False) -> UUID:
+def profile_id_of(db: Session, user_id: UUID, lock: bool = False) -> UUID | None:
     if lock:
         lock_user(db, user_id)
-    profile_id = db.scalar(select(Profile.id).where(Profile.user_id == user_id))
+    return db.scalar(select(Profile.id).where(Profile.user_id == user_id))
+
+
+def required_profile_id(db: Session, user_id: UUID, lock: bool = False) -> UUID:
+    """Creation and upload reservation demand an existing profile (409)."""
+    profile_id = profile_id_of(db, user_id, lock)
     if profile_id is None:
         raise profile_required()
+    return profile_id
+
+
+def owning_profile_id(db: Session, user_id: UUID, lock: bool = False) -> UUID:
+    """Item-scoped routes cannot reveal whether the profile or the item is missing (404)."""
+    profile_id = profile_id_of(db, user_id, lock)
+    if profile_id is None:
+        raise not_found()
     return profile_id
 
 
