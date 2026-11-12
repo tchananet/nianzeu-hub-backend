@@ -23,9 +23,9 @@ def final_metadata(**changes):
     return values
 
 
-def item(connection, profile_id, **changes):
+def item(connection, owner, **changes):
     values = dict(
-        id=uuid4(), profile_id=profile_id, title="Demo", description="", type="image",
+        id=uuid4(), profile_id=owner, title="Demo", description="", type="image",
         state="draft", created_at=NOW, updated_at=NOW,
     )
     values.update(changes)
@@ -33,15 +33,15 @@ def item(connection, profile_id, **changes):
     return values["id"]
 
 
-def validated_item(connection, profile_id, **changes):
+def validated_item(connection, owner, **changes):
     values = final_metadata(state="validated")
     values.update(changes)
-    return item(connection, profile_id, **values)
+    return item(connection, owner, **values)
 
 
-def upload(connection, item_id, **changes):
+def upload(connection, owner_item, **changes):
     values = dict(
-        id=uuid4(), item_id=item_id, quarantine_key=f"quarantine/{uuid4().hex}",
+        id=uuid4(), item_id=owner_item, quarantine_key=f"quarantine/{uuid4().hex}",
         filename="demo.jpg", media_type="image/jpeg", size_bytes=1024, sha256="c" * 64,
         created_at=NOW, expires_at=NOW + timedelta(minutes=5), reservation_active=True,
     )
