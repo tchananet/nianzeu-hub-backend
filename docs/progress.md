@@ -1,19 +1,20 @@
-# État global — A01 VALIDÉ, F01 remis QA / BLOQUÉ
+# État global — A01 VALIDÉ, F01 corrigé / réexamen QA en attente / BLOQUÉ
 
 Mise à jour Backend F01 autorisée le 2026-11-12. A01 : **VALIDÉ par QA** au candidat
 `e7a7b2c`, rapport `42c9a9f`, fusion main `9ae4a0d607f5a048ecf64c2ad095fd162a079e57`.
-F01 : implémentation remise pour revue indépendante, **BLOQUÉ**, aucune auto-validation.
-SHA applicatif testé : `acd067b11adb532af6cec50cd8a60b1809c6b4d7`.
+F01 : QA `4b823ce` a bloqué le candidat `d734912` pour CODE-01 et deux blocages environnementaux.
+CODE-01 corrigé par Backend, **réexamen QA en attente**, aucune auto-validation.
+SHA correction testé : `7571f40f6f2e2be7d2f7f9c5fd129b537233c9af`.
 
-Compteurs : lock/Ruff/Mypy/diff verts ; 45 tests unitaires réussis ; 2 tests PostgreSQL
-en erreur explicite faute de `TEST_DATABASE_URL`, 0 skip. Suite complète : 45 réussis,
-2 erreurs, sortie 1. 24 fichiers Python, maximum 89 lignes, aucune exception source.
-7 commandes consolidées : 5 sorties 0 et 2 sorties 1 (DB seule et suite complète).
+Compteurs : Ruff/Mypy/diff verts ; 51 tests unitaires réussis, dont 6 régressions encodage JSON ;
+2 tests PostgreSQL en erreur explicite faute de `TEST_DATABASE_URL`, 0 skip.
+Suite complète : 51 réussis, 2 erreurs, sortie 1. 25 fichiers Python, maximum 92 lignes.
+7 commandes de contrôle : 4 sorties 0, 3 sorties 1 (DB seule, suite complète, sync offline check).
 Installation complète bloquée aussi par espace disque E: insuffisant : 50 paquets locaux,
 PyAV verrouillé mais non installé. Ce n'est pas une installation complète validée.
 
 Reprise : libérer l'espace nécessaire sous responsabilité du propriétaire, fournir une PostgreSQL
-de test locale autorisée, relancer sync verrouillé et tous les contrôles, puis revue indépendante.
+de test locale autorisée, relancer sync verrouillé et tous les contrôles ; QA doit réexaminer CODE-01.
 Commandes exactes, microcommits, ownership, limites et journal dans [F01](missions/F01.md).
 F02 et toutes les suites **non commencées**. Aucun merge/push/déploiement par F01.
 
