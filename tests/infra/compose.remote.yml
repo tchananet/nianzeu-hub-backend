@@ -1,0 +1,10 @@
+# Always combine AFTER docker-compose.yml; never deploy the product file alone.
+services:
+  api:
+    ports: !reset []
+    restart: "no"
+  minio:
+    ports: !reset []
+    restart: "no"
+  db:
+    restart: "no"

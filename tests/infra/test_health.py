@@ -1,7 +1,7 @@
 from uuid import UUID
 
 import pytest
-from minio.error import S3Error
+from minio.error import MinioException, S3Error
 from sqlalchemy.exc import OperationalError
 from urllib3.exceptions import HTTPError
 
@@ -24,7 +24,7 @@ def test_ready_checks_both_private_buckets_without_schema(health_client):
     ]
 
 
-@pytest.mark.parametrize("failure", ["db", "missing", "public", "denied", "network"])
+@pytest.mark.parametrize("failure", ["db", "missing", "public", "denied", "network", "s3"])
 def test_dependency_failure_is_private_and_liveness_survives(health_client, failure):
     client, engine, storage = health_client
     storage.get_bucket_policy.side_effect = s3_error("NoSuchBucketPolicy")
@@ -37,6 +37,8 @@ def test_dependency_failure_is_private_and_liveness_survives(health_client, fail
         storage.get_bucket_policy.return_value = '{"Statement":[]}'
     elif failure == "denied":
         storage.get_bucket_policy.side_effect = s3_error("AccessDenied")
+    elif failure == "s3":
+        storage.bucket_exists.side_effect = MinioException("secret response")
     else:
         storage.bucket_exists.side_effect = HTTPError("secret endpoint")
     response = client.get("/health/ready")

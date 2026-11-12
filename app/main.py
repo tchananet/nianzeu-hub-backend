@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI
 from minio import Minio
-from minio.error import S3Error
+from minio.error import MinioException, S3Error
 from sqlalchemy.exc import SQLAlchemyError
 from urllib3 import PoolManager, Timeout
 from urllib3.exceptions import HTTPError
@@ -77,7 +77,7 @@ def create_app() -> FastAPI:
         try:
             check_database(application.state.engine)
             check_buckets(application.state.storage, application.state.settings)
-        except (SQLAlchemyError, S3Error, HTTPError, OSError):
+        except (SQLAlchemyError, MinioException, HTTPError, OSError):
             raise DependencyUnavailable() from None
         return {"status": "ready"}
 
