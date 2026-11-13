@@ -11,9 +11,11 @@ from itertools import count
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import make_url
+from sqlalchemy import create_engine, delete, make_url
+from sqlalchemy.orm import sessionmaker
 
 from app.main import create_app
+from app.modules.identity.models import User
 
 ORIGIN = "https://diddifree.com"
 # Each test is a distinct visitor: the register quota is 5/hour/IP, so sharing one
@@ -57,3 +59,13 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     with TestClient(create_app(), base_url="https://api.diddifree.com",
                     client=(visitor, 51000), raise_server_exceptions=False) as http:
         yield http
+
+
+def purge(emails: list[str]) -> None:
+    """Remove the accounts a test created; profiles and items cascade from the user."""
+    engine = create_engine(database_url(), hide_parameters=True)
+    try:
+        with sessionmaker(engine, expire_on_commit=False).begin() as db:
+            db.execute(delete(User).where(User.email.in_(emails)))
+    finally:
+        engine.dispose()

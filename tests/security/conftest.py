@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.api.conftest import assembled as assembled
-from tests.security.db_app import INTENT, client
+from tests.security.db_app import INTENT, client, purge
 
 
 @pytest.fixture
@@ -18,9 +18,9 @@ def live(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
 
 
 @pytest.fixture
-def two_sessions(live: TestClient) -> list[dict[str, object]]:
+def two_sessions(live: TestClient) -> Iterator[list[dict[str, object]]]:
     """Two registered, logged-in talents with independent cookies and CSRF tokens."""
-    accounts = []
+    accounts: list[dict[str, object]] = []
     for _ in range(2):
         email = f"q01-{uuid4().hex}@example.com"
         body = {"email": email, "password": "a sufficiently long secret"}
@@ -31,4 +31,7 @@ def two_sessions(live: TestClient) -> list[dict[str, object]]:
         accounts.append({"email": email, "csrf": logged.json()["csrf_token"],
                          "cookies": dict(live.cookies)})
         live.cookies.clear()
-    return accounts
+    try:
+        yield accounts
+    finally:
+        purge([str(account["email"]) for account in accounts])
