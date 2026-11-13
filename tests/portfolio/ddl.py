@@ -7,6 +7,8 @@ from pathlib import Path
 SQL_DIR = Path(__file__).resolve().parents[2] / "migrations" / "versions"
 FLAGS = ("NOT NULL", "PRIMARY KEY", "UNIQUE")
 COLUMN_START = re.compile(r"^[a-z_][a-z0-9_]*\s")
+# A quoted literal, a word, a number, a grouping character or a comparison operator.
+TOKEN = re.compile(r"'[^']*'|[A-Za-z_][A-Za-z0-9_]*|\d+|[(),]|[<>!~]=?|=|\S")
 
 
 @dataclass
@@ -22,41 +24,47 @@ class Column:
 class Table:
     name: str
     columns: dict[str, Column] = field(default_factory=dict)
-    checks: set[str] = field(default_factory=set)
+    checks: dict[str, list[str]] = field(default_factory=dict)
     indexes: dict[str, list[str]] = field(default_factory=dict)
 
 
+def normalise(predicate: str) -> list[str]:
+    """Canonical tokens: layout and a wrapping parenthesis pair fold away, bounds never."""
+    # Keywords and identifiers upper-case; a quoted literal keeps its exact bytes.
+    tokens = [t if t.startswith("'") else t.upper() for t in TOKEN.findall(predicate)]
+    while tokens[:1] == ["("] and tokens[-1:] == [")"]:
+        depth = 0
+        for index, token in enumerate(tokens):
+            depth += (token == "(") - (token == ")")
+            if depth == 0 and index < len(tokens) - 1:
+                return tokens
+        tokens = tokens[1:-1]
+    return tokens
+
+
 def body_of(sql: str, start: int) -> str:
-    depth, index = 0, start
-    while index < len(sql):
-        if sql[index] == "(":
-            depth += 1
-        elif sql[index] == ")":
-            depth -= 1
-            if depth == 0:
-                return sql[start + 1 : index]
-        index += 1
+    depth = 0
+    for index in range(start, len(sql)):
+        depth += (sql[index] == "(") - (sql[index] == ")")
+        if depth == 0:
+            return sql[start + 1 : index]
     raise ValueError("Unbalanced CREATE TABLE body")
 
 
 def split_top_level(body: str) -> list[str]:
-    parts, depth, current = [], 0, ""
+    parts, depth = [""], 0
     for char in body:
         if char == "," and depth == 0:
-            parts.append(current.strip())
-            current = ""
+            parts.append("")
             continue
         depth += (char == "(") - (char == ")")
-        current += char
-    parts.append(current.strip())
-    return [part for part in parts if part]
+        parts[-1] += char
+    return [part.strip() for part in parts if part.strip()]
 
 
 def read_column(table: Table, part: str) -> None:
     name, remainder = part.split(maxsplit=1)
-    without_check = re.sub(r"\s*CHECK\s*\(.*\)\s*$", "", remainder, flags=re.DOTALL)
-    without_ref = re.sub(r"\s*REFERENCES\s.*$", "", without_check, flags=re.DOTALL)
-    type_sql = without_ref
+    type_sql = re.sub(r"\s*(CHECK\s*\(.*\)|REFERENCES\s.*)$", "", remainder, flags=re.DOTALL)
     for flag in FLAGS:
         type_sql = type_sql.replace(flag, "")
     reference = re.search(r"REFERENCES (\w+)\((\w+)\) ON DELETE (\w+)", remainder)
@@ -67,9 +75,10 @@ def read_column(table: Table, part: str) -> None:
         primary="PRIMARY KEY" in remainder,
         references=None if reference is None else ".".join(reference.groups()).upper(),
     )
-    if "CHECK" in remainder:
-        # PostgreSQL names an inline column check <table>_<column>_check.
-        table.checks.add(f"{table.name}_{name}_check")
+    # PostgreSQL names an inline column check <table>_<column>_check.
+    inline = re.search(r"CHECK\s*\((.*)\)\s*$", remainder, flags=re.DOTALL)
+    if inline is not None:
+        table.checks[f"{table.name}_{name}_check"] = normalise(inline.group(1))
 
 
 def parse(filename: str) -> Table:
@@ -79,9 +88,9 @@ def parse(filename: str) -> Table:
         raise ValueError(f"No CREATE TABLE in {filename}")
     table = Table(name=match.group(1))
     for part in split_top_level(body_of(sql, match.end() - 1)):
-        named = re.match(r"CONSTRAINT (\w+) CHECK", part, flags=re.DOTALL)
+        named = re.match(r"CONSTRAINT (\w+) CHECK\s*\((.*)\)$", part, flags=re.DOTALL)
         if named is not None:
-            table.checks.add(named.group(1))
+            table.checks[named.group(1)] = normalise(named.group(2))
         elif COLUMN_START.match(part):
             read_column(table, part)
         else:
