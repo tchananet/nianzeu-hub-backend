@@ -15,7 +15,7 @@ Document de suivi courant. Les rapports de revue indépendants restent dans `doc
 | P01 profils et contact | fusionnée | `docs/missions/P01.md` |
 | M03 portfolio et index recherche | fusionnée | `docs/missions/M03.md` |
 | R01 recherche publique | fusionnée | `docs/missions/R01.md` |
-| O01 portfolio | fusionnée, couverture incomplète | `docs/missions/O01.md` |
+| O01 portfolio | fusionnée ; les neuf preuves du contrat couvertes | `docs/missions/O01.md` |
 | X01 assemblage des routes | fusionnée | `docs/missions/X01.md` |
 | B01 sauvegarde | fusionnée, non éprouvée | `docs/missions/B01.md`, `docs/backup.md` |
 | D01 runbook de déploiement | fusionnée | `docs/deployment.md`, `docs/qa/release.md` |
@@ -23,7 +23,7 @@ Document de suivi courant. Les rapports de revue indépendants restent dans `doc
 | QA indépendante I01 | BLOQUÉ levé par décision, voir ci-dessous | `docs/qa/I01.md` |
 | QA indépendante O01 | BLOQUÉ ; 3 défauts sur 6 corrigés | `docs/qa/O01.md` |
 | QA indépendante M03 | VALIDÉ | `docs/qa/M03.md` |
-| Q02 charge | à faire | bloquée : aucun VPS de test autorisé |
+| Q02 charge | harnais livré, **mesure non prise** | `docs/qa/load.md`, `docs/missions/Q02.md` |
 
 État des contrôles : `ruff` et `mypy` passent (104 fichiers source). Campagne distante sur
 PostgreSQL réel au commit `f45b70b`, base fraîche : **711 réussis, 2 ignorés, 0 échec**,
