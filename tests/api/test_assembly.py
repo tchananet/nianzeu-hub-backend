@@ -12,6 +12,7 @@ from uuid import uuid4
 import pytest
 
 ID = str(uuid4())
+GOOD = "https://diddifree.com"
 PRIVATE = [
     ("get", "/api/v1/auth/me"),
     ("get", "/api/v1/auth/csrf"),
@@ -45,7 +46,7 @@ PUBLIC = [
 
 @pytest.mark.parametrize(("method", "path"), PUBLIC)
 def test_public_routes_are_mounted_and_need_no_session(assembled, method, path):
-    response = getattr(assembled, method)(path, headers={"Origin": "https://diddifree.com"})
+    response = getattr(assembled, method)(path, headers={"Origin": GOOD})
     assert response.status_code not in (404, 405), f"{path} is not mounted"
     # Anonymous access is allowed, so these never demand a session; they stop at the
     # shared public quota, which this fixture makes unreachable.
@@ -55,7 +56,7 @@ def test_public_routes_are_mounted_and_need_no_session(assembled, method, path):
 
 @pytest.mark.parametrize(("method", "path"), PRIVATE)
 def test_private_routes_are_mounted_and_refuse_anonymous_access(assembled, method, path):
-    response = getattr(assembled, method)(path, headers={"Origin": "https://diddifree.com"})
+    response = getattr(assembled, method)(path, headers={"Origin": GOOD})
     assert response.status_code not in (404, 405), f"{path} is not mounted"
     assert response.status_code in (401, 403, 503), (path, response.status_code)
     body = response.json()

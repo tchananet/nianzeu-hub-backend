@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -12,6 +13,8 @@ from app.modules.identity.passwords import Passwords
 from app.modules.identity.schemas import CredentialsInput, UserDTO
 from app.shared.errors import DependencyUnavailable
 from app.shared.principal import Principal
+
+logger = logging.getLogger("app.identity")
 
 
 @dataclass(frozen=True)
@@ -38,6 +41,8 @@ class IdentityService:
             with self.factory.begin() as db:
                 yield db
         except SQLAlchemyError:
+            # Actionable without disclosing the statement, its parameters or the cause.
+            logger.error("Identity transaction failed", extra={"code": "DEPENDENCY_UNAVAILABLE"})
             raise DependencyUnavailable() from None
 
     def register(self, data: CredentialsInput) -> UserDTO:

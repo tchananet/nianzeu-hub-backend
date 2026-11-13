@@ -10,6 +10,7 @@ from app.modules.portfolio.maintenance import CleanupService
 from app.modules.portfolio.minio_client import build_client
 from app.modules.portfolio.minio_storage import MinioStorage
 from app.modules.portfolio.storage import sweepable
+from app.shared.errors import DependencyUnavailable
 
 logger = logging.getLogger("app.portfolio.cleanup")
 
@@ -30,7 +31,13 @@ def main(argv: list[str] | None = None) -> int:
     if not options.once:
         parser.error("--once is required; no daemon mode is provided")
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    report = build_service().run_once()
+    try:
+        report = build_service().run_once()
+    except DependencyUnavailable:
+        # Scheduled hourly: fail with a readable status instead of a traceback, and
+        # delete nothing, so the next run simply retries.
+        logger.error(json.dumps({"code": "DEPENDENCY_UNAVAILABLE", "deleted": 0}))
+        return 75
     logger.info(json.dumps(report._asdict()))
     return 0
 

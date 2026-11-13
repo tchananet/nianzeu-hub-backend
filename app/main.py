@@ -11,6 +11,7 @@ from urllib3.exceptions import HTTPError
 
 from app.core.config import Settings
 from app.core.database import build_engine, check_database
+from app.core.json_transport import JsonTransport
 from app.core.request_context import RequestContext
 from app.shared.errors import DependencyUnavailable
 from app.shared.http_errors import install_error_handlers
@@ -70,6 +71,9 @@ def create_app() -> FastAPI:
     application.state.engine = engine
     application.state.storage = storage_client(settings)
     install_error_handlers(application)
+    # Added before RequestContext so it ends up inside it: the transport limit is the
+    # first control of http.md, but its refusals still need a request id.
+    application.add_middleware(JsonTransport)
     application.add_middleware(RequestContext)
     for router in build_routers(settings, engine):
         application.include_router(router)

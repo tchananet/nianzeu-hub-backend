@@ -23,6 +23,8 @@ def test_encryption_javascript_attachments_and_actions_are_refused() -> None:
     assert reject(samples.pdf_with_attachment()) == "PDF_EMBEDDED_FILE"
     assert reject(samples.pdf_with_open_action()) == "PDF_AUTO_ACTION"
     assert reject(samples.pdf_with_launch_annotation()) == "PDF_AUTO_ACTION"
+    # Carried by an annotation, so outside the catalog name tree attachment_list reads.
+    assert reject(samples.pdf_with_attachment_annotation()) == "PDF_EMBEDDED_FILE"
 
 
 def test_page_budget_follows_the_contract() -> None:

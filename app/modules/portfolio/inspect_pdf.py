@@ -30,6 +30,12 @@ def reject_page(page: DictionaryObject) -> None:
     entries = annotations.get_object() if annotations is not None else []
     for annotation in entries if isinstance(entries, list) else []:
         target = annotation.get_object()
+        if isinstance(target, DictionaryObject) and (
+            target.get("/Subtype") == "/FileAttachment" or "/FS" in target
+        ):
+            # Annotation-borne attachments never appear in the catalog name tree that
+            # reader.attachment_list inspects, so they must be refused here.
+            raise rejected_invalid("PDF_EMBEDDED_FILE")
         action = target.get("/A") if isinstance(target, DictionaryObject) else None
         resolved = action.get_object() if action is not None else None
         if isinstance(resolved, DictionaryObject) and resolved.get("/S") in ACTIONS:

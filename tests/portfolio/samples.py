@@ -70,3 +70,17 @@ def pdf_with_launch_annotation() -> bytes:
     )
     document.pages[0][NameObject("/Annots")] = ArrayObject([annotation])
     return pdf_from(document)
+
+
+def pdf_with_attachment_annotation() -> bytes:
+    """An embedded file carried by an annotation, outside the catalog name tree."""
+    document = writer()
+    spec = DictionaryObject(
+        {NameObject("/Type"): NameObject("/Filespec"),
+         NameObject("/F"): TextStringObject("payload.exe")}
+    )
+    annotation = DictionaryObject(
+        {NameObject("/Subtype"): NameObject("/FileAttachment"), NameObject("/FS"): spec}
+    )
+    document.pages[0][NameObject("/Annots")] = ArrayObject([annotation])
+    return pdf_from(document)

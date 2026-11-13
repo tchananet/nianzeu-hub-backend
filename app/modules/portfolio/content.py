@@ -1,6 +1,8 @@
 import logging
 from collections.abc import Iterator
 from dataclasses import dataclass
+from itertools import chain
+from threading import Lock
 from uuid import UUID
 
 from starlette.responses import StreamingResponse
@@ -33,6 +35,20 @@ def headers(delivery: Delivery) -> dict[str, str]:
     }
 
 
+class Token:
+    """Releases one download slot exactly once, whichever path gets there first."""
+
+    def __init__(self, slots: Slots) -> None:
+        self.slots, self.guard, self.spent = slots, Lock(), False
+
+    def release(self) -> None:
+        with self.guard:
+            if self.spent:
+                return
+            self.spent = True
+        self.slots.release()
+
+
 class ContentService:
     """Serves the private bucket through the API; no signed GET URL is ever issued."""
 
@@ -53,26 +69,32 @@ class ContentService:
     def stream(self, item_id: UUID) -> StreamingResponse:
         delivery = self.lookup(item_id)
         self.slots.acquire()
+        token = Token(self.slots)
         try:
             info = self.context.storage.head(self.context.validated_bucket, delivery.key)
             if info.size_bytes != delivery.size_bytes:
                 logger.error("Published object size drift", extra={"code": "OBJECT_INVALID"})
                 raise DependencyUnavailable()
+            body = self.body(delivery.key, token)
+            # Start the generator here. An iterator that is never started never runs its
+            # finally, so a response whose body is never consumed would strand its slot
+            # and, after enough of them, make every public read fail with 503 for good.
+            head = next(body, b"")
         except StorageMissing:
-            self.slots.release()
+            token.release()
             logger.error("Published object absent", extra={"code": "OBJECT_MISSING"})
             raise DependencyUnavailable() from None
         except Exception:
-            self.slots.release()
+            token.release()
             raise
         return StreamingResponse(
-            self.body(delivery.key), media_type=delivery.media_type, headers=headers(delivery)
+            chain((head,), body), media_type=delivery.media_type, headers=headers(delivery)
         )
 
-    def body(self, key: str) -> Iterator[bytes]:
+    def body(self, key: str, token: Token) -> Iterator[bytes]:
         """Range is ignored at MVP: the full object is always returned with status 200."""
         try:
             with self.context.storage.read_stream(self.context.validated_bucket, key) as chunks:
                 yield from chunks
         finally:
-            self.slots.release()
+            token.release()
