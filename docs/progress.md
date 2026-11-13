@@ -22,9 +22,11 @@ Document de suivi courant. Les rapports de revue indépendants restent dans `doc
 | Q01 sécurité indépendante | partielle | `docs/qa/security.md` |
 | Q02 charge | à faire | bloquée : aucun VPS de test autorisé |
 
-État des contrôles : `ruff` et `mypy` passent (104 fichiers source). 389 tests passent en
-local ; 241 sont bloqués faute de PostgreSQL accessible depuis ce poste. Dernière campagne
-distante sur PostgreSQL réel : 411 réussis, 2 ignorés, 2 échecs, tous deux corrigés depuis.
+État des contrôles : `ruff` et `mypy` passent (104 fichiers source). Campagne distante sur
+PostgreSQL réel au commit `8536d3d`, base fraîche : **706 réussis, 2 ignorés, 0 échec**,
+sentinelle `SUITE_PASS` et code de sortie 0. Les 2 ignorés sont les tests de pile F02 qui
+exigent `F02_STACK_TEST=1`. En local, 460 passent et 246 se bloquent explicitement faute de
+PostgreSQL ; aucun n'est jamais compté comme réussi.
 
 ## Environnement de vérification
 

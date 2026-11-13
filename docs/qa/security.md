@@ -48,27 +48,35 @@ secret de quota, ni les clés de stockage. L'enveloppe est exactement
 validation, `X-Request-ID` présent partout y compris sur la santé, et `Cache-Control:
 no-store` sur les lectures privées.
 
-## Ce qui reste bloqué
+## La preuve transversale a été exécutée
 
-`tests/security/test_cross_session.py` : 5 tests **écrits et non exécutés**. Ils exigent
-`SECURITY_TEST_DATABASE_URL` vers un PostgreSQL réel en loopback avec les migrations
-appliquées ; sans elle ils échouent en blocage explicite. SQLite n'est jamais substitué et
-aucun de ces tests n'est compté comme réussi.
-
-Ils couvrent la preuve transversale de `http.md` : un intrus reçoit 404 sur l'élément d'un
-tiers en lecture, suppression, publication et dépublication, et l'élément du propriétaire
-est toujours présent ensuite ; une session valide sans jeton CSRF reçoit 403 ; une session
-révoquée reçoit 401 ; un identifiant de propriétaire envoyé par le client est refusé en
-422 ; une coordonnée marquée privée n'apparaît ni sur le profil public ni sur les contacts
+`tests/security/test_cross_session.py` : **5 tests exécutés et réussis** sur PostgreSQL réel,
+campagne distante au commit `8536d3d` (706 réussis, 2 ignorés, 0 échec, sentinelle
+`SUITE_PASS`). Ils vérifient qu'un intrus reçoit 404 sur l'élément d'un tiers en lecture,
+suppression, publication et dépublication et que l'élément du propriétaire survit à ces
+tentatives ; qu'une session valide sans jeton CSRF reçoit 403 ; qu'une session révoquée
+reçoit 401 ; qu'un identifiant de propriétaire envoyé par le client est refusé en 422 ; et
+qu'une coordonnée marquée privée n'apparaît ni sur le profil public ni sur les contacts
 publics.
 
-La variable est désormais fournie par `ops/test-portainer/compose.suite.yaml`, donc ces cinq
-tests s'exécuteront à la prochaine campagne distante. **Tant que cette campagne n'a pas
-produit de résultat, Q01 n'est pas validée.**
+Deux défauts de ces tests ont été trouvés et corrigés en route, tous deux du côté des
+tests, le produit s'étant comporté conformément au contrat :
+
+1. Les cinq tests partageaient une adresse cliente alors que l'inscription est limitée à
+   5/heure/IP. L'API refusait donc correctement en 429 à partir de la sixième inscription.
+   Chaque test est maintenant un visiteur distinct.
+2. Les comptes créés par l'API n'étaient pas supprimés. Comme toute la suite partage une
+   base et que la recherche R01 affirme des ensembles de résultats exacts, ce résidu — des
+   profils nommés « Ada » — faisait échouer la recherche de « ada ». La base survivant au
+   redémarrage du conteneur d'exécution, chaque campagne polluait la suivante. La fixture
+   purge désormais ses comptes ; profils et éléments de portfolio suivent en cascade.
 
 ## Verdict
 
-**Partiel.** Les propriétés vérifiables sans base le sont et passent. Les propriétés
-transversales nécessitant une base sont écrites mais non éprouvées. Aucun blocage de
-sécurité n'a été découvert dans le périmètre exécuté ; aucune conclusion ne peut être tirée
-du périmètre non exécuté.
+**VALIDÉ dans son périmètre.** Les 57 contrôles de cette suite passent, dont les 5 preuves
+transversales sur PostgreSQL réel. Aucun défaut de sécurité du produit n'a été découvert :
+les quatre non-réussites rencontrées étaient des défauts de tests, et dans chaque cas le
+produit appliquait le contrat.
+
+Ce verdict ne couvre pas : MinIO réel (adaptateur factice), la charge (Q02, non exécutée),
+et la revue indépendante des modules, qui fait l'objet de rapports distincts.
