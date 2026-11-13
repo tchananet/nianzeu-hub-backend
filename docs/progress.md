@@ -90,13 +90,11 @@ La revue indépendante I01 a bloqué sur un écart réel : `docs/contracts/ident
 close incluant tout sous-domaine `*.diddifree.com`, et que `APP_FRONTEND_ORIGIN` est validé
 au démarrage sans être lu par aucun contrôle.
 
-Arbitrage retenu par le propriétaire du produit : **conserver la liste close et corriger le
-contrat**, plutôt qu'épingler le contrôle. Le contrat documente désormais la politique réelle,
-la confiance accordée aux sous-domaines, et le fait que `APP_FRONTEND_ORIGIN` reste réservé à
-une future politique CORS.
+Arbitrage du propriétaire du produit : **conserver la liste close et corriger le contrat**
+plutôt qu'épingler le contrôle. Le contrat documente la politique réelle, la confiance
+accordée aux sous-domaines et le statut réservé de `APP_FRONTEND_ORIGIN`.
 
 Risque résiduel consigné, non corrigé : un sous-domaine `*.diddifree.com` compromis franchit
-le contrôle d'origine sur les mutations et sur `GET /auth/csrf`. Le jeton CSRF synchronisé
-reste exigé sur chaque mutation, et l'absence d'intergiciel CORS (GAP-03) empêche aujourd'hui
-un script tiers de lire les réponses. Épingler l'origine ou ajouter CORS resterait le
-durcissement naturel si cette hypothèse change.
+le contrôle d'origine sur les mutations et sur `GET /auth/csrf`. Le jeton CSRF synchronisé et
+l'absence d'intergiciel CORS (GAP-03) restent les barrières. Épingler l'origine ou ajouter
+CORS serait le durcissement naturel si cette hypothèse change.
