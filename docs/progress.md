@@ -19,12 +19,17 @@ Document de suivi courant. Les rapports de revue indépendants restent dans `doc
 | X01 assemblage des routes | fusionnée | `docs/missions/X01.md` |
 | B01 sauvegarde | fusionnée, non éprouvée | `docs/missions/B01.md`, `docs/backup.md` |
 | D01 runbook de déploiement | fusionnée | `docs/deployment.md`, `docs/qa/release.md` |
-| Q01 sécurité indépendante | partielle | `docs/qa/security.md` |
+| Q01 sécurité indépendante | VALIDÉ dans son périmètre | `docs/qa/security.md` |
+| QA indépendante I01 | **BLOQUÉ** : origine non épinglée | `docs/qa/I01.md` |
+| QA indépendante O01 | BLOQUÉ ; 3 défauts sur 6 corrigés | `docs/qa/O01.md` |
+| QA indépendante M03 | VALIDÉ | `docs/qa/M03.md` |
 | Q02 charge | à faire | bloquée : aucun VPS de test autorisé |
 
 État des contrôles : `ruff` et `mypy` passent (104 fichiers source). Campagne distante sur
-PostgreSQL réel au commit `8536d3d`, base fraîche : **706 réussis, 2 ignorés, 0 échec**,
-sentinelle `SUITE_PASS` et code de sortie 0. Les 2 ignorés sont les tests de pile F02 qui
+PostgreSQL réel au commit `f45b70b`, base fraîche : **711 réussis, 2 ignorés, 0 échec**,
+sentinelle `SUITE_PASS` et code de sortie 0. Cette campagne valide les correctifs issus des
+revues indépendantes (fuite de jeton de téléchargement, pièce jointe PDF par annotation,
+limite de transport câblée). Les 2 ignorés sont les tests de pile F02 qui
 exigent `F02_STACK_TEST=1`. En local, 460 passent et 246 se bloquent explicitement faute de
 PostgreSQL ; aucun n'est jamais compté comme réussi.
 
