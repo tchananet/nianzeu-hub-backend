@@ -20,7 +20,7 @@ Document de suivi courant. Les rapports de revue indépendants restent dans `doc
 | B01 sauvegarde | fusionnée, non éprouvée | `docs/missions/B01.md`, `docs/backup.md` |
 | D01 runbook de déploiement | fusionnée | `docs/deployment.md`, `docs/qa/release.md` |
 | Q01 sécurité indépendante | VALIDÉ dans son périmètre | `docs/qa/security.md` |
-| QA indépendante I01 | **BLOQUÉ** : origine non épinglée | `docs/qa/I01.md` |
+| QA indépendante I01 | BLOQUÉ levé par décision, voir ci-dessous | `docs/qa/I01.md` |
 | QA indépendante O01 | BLOQUÉ ; 3 défauts sur 6 corrigés | `docs/qa/O01.md` |
 | QA indépendante M03 | VALIDÉ | `docs/qa/M03.md` |
 | Q02 charge | à faire | bloquée : aucun VPS de test autorisé |
@@ -82,3 +82,21 @@ est corrigée par mots-clés et le contrôle est de nouveau effectif.
 - **MinIO réel** : les parcours portfolio sont couverts par un adaptateur de stockage factice ;
   la vérification contre un MinIO réel reste à exécuter.
 - **Envoi d'email** : adaptateur volontairement désactivé, échec explicite. Hors MVP.
+
+## Décision sur I01-01, origine non épinglée
+
+La revue indépendante I01 a bloqué sur un écart réel : `docs/contracts/identity.md` exigeait
+« exactement l'origine HTTPS configurée », alors que `app/core/origins.py` accepte une liste
+close incluant tout sous-domaine `*.diddifree.com`, et que `APP_FRONTEND_ORIGIN` est validé
+au démarrage sans être lu par aucun contrôle.
+
+Arbitrage retenu par le propriétaire du produit : **conserver la liste close et corriger le
+contrat**, plutôt qu'épingler le contrôle. Le contrat documente désormais la politique réelle,
+la confiance accordée aux sous-domaines, et le fait que `APP_FRONTEND_ORIGIN` reste réservé à
+une future politique CORS.
+
+Risque résiduel consigné, non corrigé : un sous-domaine `*.diddifree.com` compromis franchit
+le contrôle d'origine sur les mutations et sur `GET /auth/csrf`. Le jeton CSRF synchronisé
+reste exigé sur chaque mutation, et l'absence d'intergiciel CORS (GAP-03) empêche aujourd'hui
+un script tiers de lire les réponses. Épingler l'origine ou ajouter CORS resterait le
+durcissement naturel si cette hypothèse change.
