@@ -53,3 +53,27 @@ def mp4_bytes(
         if sound is not None:
             encode_audio(container, sound)
     return buffer.getvalue()
+
+
+def box_timescale(data: bytearray, box: bytes) -> tuple[int, int]:
+    """Offset of an MP4 header box and the timescale it declares (version 0 layout)."""
+    index = data.find(box)
+    if index < 0:
+        raise ValueError(f"{box.decode()} box absent")
+    return index, int.from_bytes(data[index + 16 : index + 20], "big")
+
+
+def lying_mp4_bytes(frames: int, declared_seconds: float) -> bytes:
+    """An honest stream under a header rewritten to claim a shorter duration.
+
+    mvhd, mdhd and tkhd carry the declared durations; the sample tables that drive the
+    packet timestamps are untouched, so the file holds `frames` worth of real content.
+    """
+    data = bytearray(mp4_bytes(frames=frames))
+    movie, movie_scale = box_timescale(data, b"mvhd")
+    media, media_scale = box_timescale(data, b"mdhd")
+    track, _ = box_timescale(data, b"tkhd")
+    headers = ((movie + 20, movie_scale), (media + 20, media_scale), (track + 24, movie_scale))
+    for offset, scale in headers:
+        data[offset : offset + 4] = int(declared_seconds * scale).to_bytes(4, "big")
+    return bytes(data)
