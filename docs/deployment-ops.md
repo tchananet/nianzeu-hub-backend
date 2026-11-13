@@ -9,10 +9,10 @@ Procédures de déploiement proprement dites : [deployment-procedures.md](deploy
 
 ## État réel du schéma
 
-Chaîne présente : `0001_identity` → `0002_profiles`. `alembic heads` doit donc renvoyer une
-seule tête, `0002_profiles`. La révision `0003_portfolio_search` prévue par M03 dans
-`contracts/data.md` **n'existe pas** dans `migrations/versions/` : les tables `portfolio_items`
-et `portfolio_uploads` et les index de recherche ne sont pas créés (GAP-09).
+Chaîne présente : `0001_identity` → `0002_profiles` → `0003_portfolio_search`. `alembic heads`
+doit renvoyer une seule tête, `0003_portfolio_search`. Les tables `portfolio_items` et
+`portfolio_uploads` et les index de recherche sont créés par cette révision ; GAP-09 est levé.
+Appliqué et vérifié sur PostgreSQL réel, campagne `c93d1ea`.
 
 ## Comment les migrations sont appliquées
 
@@ -20,10 +20,9 @@ et `portfolio_uploads` et les index de recherche ne sont pas créés (GAP-09).
   l'environnement et refuse tout ce qui n'est pas `postgresql+psycopg` sans option de requête.
 - Le mode hors ligne est explicitement refusé : `alembic upgrade --sql` est impossible, il faut
   une PostgreSQL réelle. DDL transactionnel, `lock_timeout=3000`, `connect_timeout=3`, `NullPool`.
-- **L'image runtime ne contient ni `alembic.ini` ni `migrations/`** : le `Dockerfile` ne copie
-  que `pyproject.toml`, `uv.lock` et `app/` (plus `tests/` au stage `test`). Le paquet `alembic`
-  est installé, mais les scripts de révision sont absents : aucune migration ne peut être lancée
-  depuis les conteneurs `api` ou `buckets` tels quels (GAP-11).
+- **L'image runtime contient `alembic.ini` et `migrations/`** : le `Dockerfile` les copie, donc
+  l'artefact livré applique ses propres migrations sans checkout hôte ni montage (GAP-11 levé ;
+  non-régression : `tests/infra/test_proxy_headers.py`).
 - **Aucun service Compose n'applique de migration** et A01 interdit la migration automatique au
   démarrage multiworker : c'est une étape manuelle, unique, explicite, exécutée une seule fois
   par déploiement, jamais en parallèle de deux instances.
