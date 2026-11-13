@@ -9,6 +9,10 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project --no-build \
     && useradd --uid 10001 --no-create-home app
 COPY app ./app
+# Shipped so the deployed image can apply its own migrations; without them an operator
+# needs a host checkout and a separate container (GAP-11 of docs/deployment-gaps.md).
+COPY alembic.ini ./alembic.ini
+COPY migrations ./migrations
 USER 10001:10001
 EXPOSE 8000
 CMD ["uvicorn", "--factory", "app.main:create_app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--no-access-log"]

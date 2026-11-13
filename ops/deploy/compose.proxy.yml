@@ -1,0 +1,20 @@
+# Attaches the API to the reverse proxy's network.
+#
+# Nginx Proxy Manager runs in its own stack on its own bridge network, where
+# 127.0.0.1 is its own loopback -- so it cannot reach the API's loopback publication
+# (GAP-01 of docs/deployment-gaps.md). The two must share a Docker network.
+#
+# Create the network once, then deploy with both files:
+#   docker network create nianzeuhub-proxy
+#   docker compose -f docker-compose.yml -f ops/deploy/compose.proxy.yml up -d
+#
+# Then point the proxy host at http://api:8000 over that network. The loopback
+# publication stays for local diagnosis; the API is never published on a public
+# interface, and the database and object storage stay off this network entirely.
+services:
+  api:
+    networks: [default, proxy]
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-nianzeuhub-proxy}
