@@ -1,5 +1,4 @@
 # Suivi d'exécution du backend
-
 Document de suivi courant. Les rapports de revue indépendants restent dans `docs/qa/<id>.md`.
 
 ## État des missions
@@ -26,10 +25,11 @@ Document de suivi courant. Les rapports de revue indépendants restent dans `doc
 | Q02 charge | harnais livré, **mesure non prise** | `docs/qa/load.md`, `docs/missions/Q02.md` |
 
 État des contrôles : `ruff` et `mypy` passent (104 fichiers source). Campagne distante sur
-PostgreSQL réel au commit `f45b70b`, base fraîche : **711 réussis, 2 ignorés, 0 échec**,
-sentinelle `SUITE_PASS` et code de sortie 0. Cette campagne valide les correctifs issus des
-revues indépendantes (fuite de jeton de téléchargement, pièce jointe PDF par annotation,
-limite de transport câblée). Les 2 ignorés sont les tests de pile F02 qui
+PostgreSQL réel au commit `c93d1ea`, base fraîche : **801 réussis, 5 ignorés, 0 échec**,
+sentinelle `SUITE_PASS` et code de sortie 0. Elle couvre les correctifs des revues, les neuf
+preuves O01, la comparaison de prédicats modèles/DDL, la durée MP4 décidée sur les paquets
+démuxés et le harnais Q02. Les 5 ignorés : 2 tests de pile F02 (`F02_STACK_TEST=1`) et les
+3 tests de charge Q02 (`Q02_LOAD_TEST=1` et VPS autorisé). Les 2 ignorés sont les tests de pile F02 qui
 exigent `F02_STACK_TEST=1`. En local, 460 passent et 246 se bloquent explicitement faute de
 PostgreSQL ; aucun n'est jamais compté comme réussi.
 
