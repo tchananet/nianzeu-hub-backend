@@ -14,7 +14,7 @@ Verdict de livraison : [qa/release.md](qa/release.md).
 | GAP-05 | Readiness ne contrôle pas la révision Alembic | `app/main.py::ready` ne fait que `check_database` + `check_buckets` | un service « ready » peut tourner sur un schéma périmé ; `SCHEMA_NOT_READY` (X01) absent |
 | GAP-06 | Ni rotation de journaux ni limite CPU/RAM pour les services de production | `docker-compose.yml` sans `logging:` ni `mem_limit`/`cpus` (présents seulement dans `ops/test-portainer/compose.yaml`) | disque saturable par les journaux, aucun plafond cgroup |
 | GAP-07 | `APP_WORKERS` ne pilote pas uvicorn | `Dockerfile` CMD `--workers 2` figé ; `settings.workers` n'est lu que par la validation de budget | changer `APP_WORKERS` modifie la validation sans changer le runtime |
-| GAP-08 | L'API utilise les credentials racine MinIO | `MINIO_ROOT_USER/PASSWORD` recopiés en `APP_STORAGE_ACCESS_KEY/SECRET_KEY` | privilèges de stockage excessifs ; pas de compte de service restreint |
+| GAP-08 | L'API utilise l'identité S3 `Admin` de SeaweedFS | `STORAGE_ACCESS_KEY/SECRET_KEY` recopiés en `APP_STORAGE_ACCESS_KEY/SECRET_KEY` | privilèges de stockage excessifs ; pas de compte de service restreint |
 | GAP-09 | Module portfolio absent : pas de schéma `0003`, pas de commande de nettoyage | `migrations/versions/` s'arrête à `0002_profiles` ; `app/modules/portfolio/` inexistant | la planification horaire définie dans [deployment-ops.md](deployment-ops.md) n'est pas activable ; uploads et publication indisponibles |
 | GAP-10 | Entretien des quotas et des vues non planifié | `purge_expired` sans appelant planifié ; aucune commande pour `profile_view_dedup` | `rate_limit_windows` et `profile_view_dedup` croissent sans borne |
 | GAP-11 | ~~L'image runtime ne contient ni `alembic.ini` ni `migrations/`~~ **corrigé** | le `Dockerfile` copie les deux ; non-régression : `tests/infra/test_proxy_headers.py` | les migrations s'appliquent depuis l'image livrée, sans checkout hôte |
@@ -30,9 +30,10 @@ Verdict de livraison : [qa/release.md](qa/release.md).
   intégrer au MVP. Aucune variable d'environnement SMTP n'existe et aucune ne doit être créée.
   L'exploitant doit donc traiter les demandes de réinitialisation hors application.
 - **Adaptateur de stockage réel** : `DisabledStorage` (`app/shared/storage_disabled.py`) lève
-  `StorageUnavailable` pour toutes les opérations. `APP_STORAGE_PUBLIC_ENDPOINT` est validé au
-  démarrage mais encore inutilisé par du code applicatif ; seul `app/main.py` parle à MinIO,
-  pour le bootstrap des buckets et la sonde de readiness.
+  `StorageUnavailable` pour toutes les opérations. `APP_STORAGE_PUBLIC_ENDPOINT` est désormais
+  bien utilisé : `app/modules/portfolio/minio_storage.py` le place dans le formulaire POST
+  présigné, c'est-à-dire l'URL vers laquelle le navigateur téléverse directement. Le stockage
+  doit donc être joignable publiquement en HTTPS, via un second hôte de proxy.
 - OAuth, comptes recruteurs, messagerie interne, modération, bucket public, URL GET signée et
   cache CDN sont hors MVP par décision et ne doivent pas être configurés.
 

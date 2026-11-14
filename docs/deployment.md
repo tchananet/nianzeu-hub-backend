@@ -29,16 +29,19 @@ Compléments : [variables d'environnement](deployment-env.md) ·
 
 | Service | Image / build | Publication | Règle |
 |---|---|---|---|
-| `api` | build local, stage `runtime` | `127.0.0.1:${API_PORT:-8000}` → 8000 | jamais exposé hors loopback |
+| `api` | build local, stage `runtime` | `127.0.0.1:${API_PORT:-21847}` → 8000 | jamais exposé hors loopback |
 | `db` | `postgres:16-alpine` | **aucune** | 5432 reste strictement privé |
-| `minio` | `quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z` | `127.0.0.1:${STORAGE_PORT:-9000}` → 9000 | S3 privé ; console `:9001` écoute dans le conteneur et **n'est pas publiée** |
+| `storage` | `chrislusf/seaweedfs:4.53` | `127.0.0.1:${STORAGE_PORT:-21848}` → 8333 | S3 privé. Le fichier d'identité S3 écrit au démarrage est **obligatoire** : sans lui SeaweedFS sert un accès anonyme complet |
 | `buckets` | build local, stage `runtime` | aucune | bootstrap unique, `restart: "no"` |
 | `tests`, `core-tests` | stage `test` | aucune | profil `test` / `extends` : jamais démarrés en production |
 
 Buckets privés : `initialize_buckets()` crée les deux buckets manquants puis appelle
 `delete_bucket_policy`. `check_buckets()` **échoue fermé** : si une policy existe sur
-l'un des buckets, `/health/ready` renvoie 503. Ne jamais installer de policy anonyme,
-ne jamais publier 9001, ne jamais ajouter de port au service `db`.
+l'un des buckets, `/health/ready` renvoie 503. Les codes d'erreur signalant l'absence de
+policy diffèrent d'un fournisseur à l'autre, donc `NoSuchBucketPolicy` et `NotImplemented`
+sont tous deux traités comme « aucune policy » ; une policy réellement présente échoue
+toujours fermé. Ne jamais installer de policy anonyme, ne jamais publier les ports internes
+de SeaweedFS (master 9333, volume 8080, filer 8888), ne jamais ajouter de port au `db`.
 
 Accessibilité depuis NPM : la publication est liée à `127.0.0.1`. Un NPM conteneurisé sur
 son propre réseau bridge **ne peut pas** joindre `127.0.0.1:8000` de l'hôte. Il faut soit un

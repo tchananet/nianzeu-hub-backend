@@ -14,7 +14,8 @@ Toutes les commandes s'exécutent depuis un checkout du dépôt au SHA livré, a
 2. Configurer la rotation des journaux du démon Docker (GAP-06) et vérifier l'espace disque.
 3. Créer le fichier d'environnement hors du contexte de build, permissions `600`, à partir de
    `.env.example`, avec `APP_ENVIRONMENT=production`, `APP_SECURE_COOKIES=true`,
-   `APP_FRONTEND_ORIGIN` dans l'allowlist, `APP_STORAGE_PUBLIC_ENDPOINT` en HTTPS et des
+   `APP_FRONTEND_ORIGIN` sur un domaine HTTPS que vous contrôlez — c'est cette valeur qui
+   définit la seule origine de confiance —, `APP_STORAGE_PUBLIC_ENDPOINT` en HTTPS et des
    secrets générés indépendamment (voir [deployment-env.md](deployment-env.md)).
 4. `dc config --quiet` : valide l'interpolation et révèle toute variable requise manquante.
 5. `dc build` : échec attendu si une dépendance exigeait une compilation native.
@@ -24,10 +25,10 @@ Toutes les commandes s'exécutent depuis un checkout du dépôt au SHA livré, a
 8. **Appliquer les migrations** avant de démarrer l'API, selon
    [deployment-ops.md](deployment-ops.md) ; relever `alembic heads` et `alembic current`.
 9. `dc up -d --wait api` ; vérifier `dc ps` (`healthy`) puis, depuis l'hôte,
-   `curl -fsS http://127.0.0.1:8000/health/live` et `.../health/ready`.
+   `curl -fsS http://127.0.0.1:${API_PORT}/health/live` et `.../health/ready`.
 10. Configurer l'hôte proxy NPM : certificat valide, redirection HTTPS, `Host` transmis,
     cible atteignable (GAP-01), et sonde `/health/live`. Vérifier depuis l'extérieur que ni
-    8000, ni 9000, ni 9001, ni 5432 ne répondent publiquement.
+    `API_PORT`, ni `STORAGE_PORT`, ni 5432 ne répondent publiquement.
 11. Activer la planification horaire du nettoyage portfolio dès que le module existe (GAP-09).
 12. Prendre une sauvegarde immédiatement après le déploiement — **procédure inexistante
     aujourd'hui** (mission B01 non livrée, GAP-12) : sans elle, l'étape 12 ne peut pas être
