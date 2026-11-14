@@ -4,10 +4,10 @@ services:
     environment: &app-env
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:?required}
       APP_DATABASE_URL: postgresql+psycopg://app:${POSTGRES_PASSWORD:?required}@db/${POSTGRES_DB:-app}
-      APP_STORAGE_ENDPOINT: http://minio:9000
+      APP_STORAGE_ENDPOINT: http://storage:8333
       APP_STORAGE_PUBLIC_ENDPOINT: ${APP_STORAGE_PUBLIC_ENDPOINT:?required}
-      APP_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:?required}
-      APP_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?required}
+      APP_STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:?required}
+      APP_STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:?required}
       APP_QUARANTINE_BUCKET: quarantine
       APP_VALIDATED_BUCKET: validated
       APP_FRONTEND_ORIGIN: ${APP_FRONTEND_ORIGIN:?required}
@@ -19,7 +19,7 @@ services:
     ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
     depends_on:
       db: {condition: service_healthy}
-      minio: {condition: service_healthy}
+      storage: {condition: service_healthy}
       buckets: {condition: service_completed_successfully}
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=20)"]
@@ -46,26 +46,37 @@ services:
       timeout: 3s
       retries: 20
     restart: unless-stopped
-  minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
-    command: [server, /data, --console-address, ":9001"]
+  storage:
+    image: chrislusf/seaweedfs:4.53
+    # SeaweedFS serves anonymous full access unless an S3 identity file is supplied,
+    # so this file is mandatory, not optional. It is written inside the container at
+    # start-up from the environment, never baked into the image or the repository.
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mkdir -p /etc/seaweedfs
+        printf '{"identities":[{"name":"app","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write","List","Tagging"]}]}' "$$STORAGE_ACCESS_KEY" "$$STORAGE_SECRET_KEY" > /etc/seaweedfs/s3.json
+        exec weed server -dir=/data -s3 -s3.port=8333 \
+          -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=1024
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?required}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?required}
-    ports: ["127.0.0.1:${STORAGE_PORT:-9000}:9000"]
-    volumes: ["minio-data:/data"]
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:?required}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:?required}
+    ports: ["127.0.0.1:${STORAGE_PORT:-21848}:8333"]
+    volumes: ["storage-data:/data"]
+    # The master answering proves the process is up; that the S3 gateway is actually
+    # usable is proven by the api's own readiness probe, which lists both buckets.
     healthcheck:
-      test: [CMD, curl, -fsS, http://localhost:9000/minio/health/ready]
+      test: [CMD-SHELL, "wget -q -O /dev/null http://localhost:9333/"]
       interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 30
     restart: unless-stopped
   buckets:
     build: {context: ., target: runtime}
     environment: *app-env
     command: [python, -c, "from app.main import initialize_buckets; initialize_buckets()"]
     depends_on:
-      minio: {condition: service_healthy}
+      storage: {condition: service_healthy}
     restart: "no"
     read_only: true
     cap_drop: [ALL]
@@ -92,4 +103,4 @@ services:
       TEST_DATABASE_URL: postgresql+psycopg://app:${POSTGRES_PASSWORD:?required}@127.0.0.1/${POSTGRES_DB:-app}
 volumes:
   postgres-data:
-  minio-data:
+  storage-data:

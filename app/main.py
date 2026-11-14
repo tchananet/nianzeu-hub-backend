@@ -46,7 +46,7 @@ def check_buckets(client: Minio, settings: Settings) -> None:
         try:
             client.get_bucket_policy(bucket)
         except S3Error as error:
-            if error.code != "NoSuchBucketPolicy":
+            if error.code not in {"NoSuchBucketPolicy", "NotImplemented"}:
                 raise
         else:
             # Fail closed: bootstrap never installs an anonymous access policy.
