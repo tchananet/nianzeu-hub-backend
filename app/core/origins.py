@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlsplit
+from urllib.parse import SplitResult, urlsplit
 
 CORS_METHODS = ("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS")
 CORS_HEADERS = ("Content-Type", "X-CSRF-Token", "X-Auth-Intent")
@@ -29,20 +29,33 @@ def normalize_origin(value: str) -> str:
     return f"{url.scheme}://{host}{suffix}"
 
 
-def is_allowed_origin(value: str, environment: str) -> bool:
+def local_browser_origin(url: SplitResult, environment: str) -> bool:
+    """Development convenience: any localhost port, never outside local/test."""
+    return (environment in {"local", "test"} and url.scheme == "http"
+            and url.hostname == "localhost")
+
+
+def is_allowed_origin(value: str, environment: str, configured: str | None = None) -> bool:
+    """One trusted origin: the configured frontend. No domain is trusted implicitly.
+
+    `configured` is the already-normalised ``Settings.frontend_origin``. Passing None
+    trusts nothing, so a caller that forgets to supply it fails closed.
+    """
     try:
-        url = urlsplit(normalize_origin(value))
+        candidate = normalize_origin(value)
     except ValueError:
         return False
-    host = url.hostname or ""
-    if environment in {"local", "test"} and url.scheme == "http" and host == "localhost":
+    if local_browser_origin(urlsplit(candidate), environment):
         return True
-    return (url.scheme == "https" and url.port in {None, 443}
-            and (host in {"diddifree.com", "netatroniks.xyz"}
-                 or host.endswith(".diddifree.com")))
+    return configured is not None and candidate == configured
 
 
-def require_allowed_origin(value: str, environment: str) -> str:
-    if not is_allowed_origin(value, environment):
-        raise ValueError("Origin is not allowed")
-    return normalize_origin(value)
+def usable_origin(value: str, environment: str) -> str:
+    """Validates the configured frontend origin itself; returns it normalised."""
+    candidate = normalize_origin(value)
+    url = urlsplit(candidate)
+    if url.scheme == "https" and url.port in {None, 443}:
+        return candidate
+    if local_browser_origin(url, environment):
+        return candidate
+    raise ValueError("Frontend origin must be HTTPS; http://localhost only in local/test")

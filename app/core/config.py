@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 from app.core.config_urls import endpoint, is_local_http_api
-from app.core.origins import normalize_origin, require_allowed_origin
+from app.core.origins import normalize_origin, usable_origin
 
 
 class Settings(BaseSettings):
@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     quota_hmac_secret: SecretStr = Field(min_length=32)
     secure_cookies: bool = True
     session_cross_site_enabled: bool = False
+    docs_enabled: bool = False
     api_public_origin: str | None = None
     workers: int = Field(default=2, ge=1, le=20)
     pool_size: int = Field(default=5, ge=1, le=20)
@@ -29,7 +30,8 @@ class Settings(BaseSettings):
     pool_timeout: int = Field(default=3, ge=1, le=3)
     statement_timeout_ms: int = Field(default=3000, ge=1, le=3000)
 
-    @field_validator("session_cross_site_enabled", "secure_cookies", mode="before")
+    @field_validator("session_cross_site_enabled", "secure_cookies", "docs_enabled",
+                     mode="before")
     @classmethod
     def strict_boolean(cls, value: object) -> bool:
         if isinstance(value, bool):
@@ -57,7 +59,7 @@ class Settings(BaseSettings):
         if not valid:
             raise ValueError("PostgreSQL psycopg URL with credentials required; no query options")
         local = self.environment in ("local", "test")
-        self.frontend_origin = require_allowed_origin(self.frontend_origin, self.environment)
+        self.frontend_origin = usable_origin(self.frontend_origin, self.environment)
         if self.api_public_origin is not None:
             self.api_public_origin = normalize_origin(self.api_public_origin)
         if self.session_cross_site_enabled and (

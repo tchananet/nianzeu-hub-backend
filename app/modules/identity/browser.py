@@ -10,6 +10,7 @@ from app.shared.errors import AppError
 class BrowserPolicy:
     def __init__(self, settings: Settings) -> None:
         self.environment = settings.environment
+        self.frontend_origin = settings.frontend_origin
         self.cross_site = settings.session_cross_site_enabled
         self.secure = settings.secure_cookies
         self.cookie_name = "__Host-session" if self.secure else "session_local"
@@ -19,7 +20,8 @@ class BrowserPolicy:
         origins = request.headers.getlist("origin")
         origin = origins[0] if len(origins) == 1 else None
         if (len(origins) > 1 or required and origin is None
-                or origin is not None and not is_allowed_origin(origin, self.environment)
+                or origin is not None
+                and not is_allowed_origin(origin, self.environment, self.frontend_origin)
                 or not self.cross_site and request.headers.get("sec-fetch-site") == "cross-site"):
             raise AppError("ORIGIN_FORBIDDEN", 403, "Origin forbidden")
 

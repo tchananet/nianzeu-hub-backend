@@ -66,7 +66,13 @@ def create_app() -> FastAPI:
         finally:
             engine.dispose()
 
-    application = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    # Not published by accident: the schema names every route. APP_DOCS_ENABLED=true.
+    docs = settings.docs_enabled or settings.environment in {"local", "test"}
+    application = FastAPI(
+        lifespan=lifespan, title="nianzeuhub backend", version="1", redoc_url=None,
+        docs_url="/api/v1/docs" if docs else None,
+        openapi_url="/api/v1/openapi.json" if docs else None,
+    )
     application.state.settings = settings
     application.state.engine = engine
     application.state.storage = storage_client(settings)

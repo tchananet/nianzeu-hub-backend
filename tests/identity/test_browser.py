@@ -6,9 +6,11 @@ from app.modules.identity.browser import BrowserPolicy
 from app.shared.errors import AppError
 
 
-def policy(cross_site: bool = True, secure: bool = True) -> BrowserPolicy:
+def policy(cross_site: bool = True, secure: bool = True,
+           frontend: str = "https://app.example.com") -> BrowserPolicy:
     return BrowserPolicy(Settings.model_construct(
         environment="test", session_cross_site_enabled=cross_site, secure_cookies=secure,
+        frontend_origin=frontend,
     ))
 
 
