@@ -23,7 +23,7 @@ require_env() {
   done
 }
 
-# Every PostgreSQL and MinIO access runs in a container: no daemon, no backup.
+# Every PostgreSQL and S3 access runs in a container: no daemon, no backup.
 require_docker_daemon() {
   docker version --format '{{.Server.Version}}' >/dev/null 2>&1 ||
     die 'Docker daemon unreachable: start it before any backup or restore'
