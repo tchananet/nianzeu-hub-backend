@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Creates one encrypted, self-describing backup set: PostgreSQL dump plus every
-# MinIO object, captured at a single consistent point. Exits non-zero on any
-# doubt; a partially written set is removed instead of being published.
+# SeaweedFS S3 object, captured at a single consistent point. Exits non-zero on
+# any doubt; a partially written set is removed instead of being published.
 set -euo pipefail
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
@@ -79,7 +79,8 @@ manifest_write "$SET_DIR/manifest.json" \
   alembic_revision "$ALEMBIC_REVISION" app_version "${BACKUP_APP_VERSION:-unrecorded}" \
   api_image "$(docker_container_image "${BACKUP_API_CONTAINER:-none}")" \
   pg_server_version "$PG_VERSION" pg_image "$(docker_image_digest "$PG_IMAGE")" \
-  mc_image "$(docker_image_digest "$MC_IMAGE")" database "$PGDATABASE" \
+  object_client_image "$(docker_image_digest "$OBJECT_CLIENT_IMAGE")" \
+  database "$PGDATABASE" \
   quarantine_bucket "$QUARANTINE_BUCKET" validated_bucket "$VALIDATED_BUCKET" \
   quarantine_included "$QUARANTINE_INCLUDED" \
   objects_total "$(object_count "$STAGE")" objects_bytes "$(object_bytes "$STAGE")" \

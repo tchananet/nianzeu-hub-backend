@@ -26,24 +26,41 @@ services:
     logging: &logging
       driver: json-file
       options: {max-size: "5m", max-file: "2"}
-  restore-minio:
-    image: ${RESTORE_MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z}
+  restore-storage:
+    image: ${RESTORE_STORAGE_IMAGE:-chrislusf/seaweedfs:4.53}
     restart: "no"
     cpus: 1.0
     mem_limit: 1g
     pids_limit: 256
     security_opt: ["no-new-privileges:true"]
-    command: [server, /data]
+    # SeaweedFS serves anonymous FULL access when no S3 identity file is given.
+    # The file is therefore mandatory, not optional, even for a throwaway target:
+    # without it this container is an open, writable S3 endpoint on the restore
+    # network. Same pattern as the `storage` service of docker-compose.yml: the
+    # file is written inside the container at start-up from the environment,
+    # never baked into an image and never committed.
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mkdir -p /etc/seaweedfs
+        printf '{"identities":[{"name":"restore","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write","List","Tagging"]}]}' "$$RESTORE_S3_ACCESS_KEY" "$$RESTORE_S3_SECRET_KEY" > /etc/seaweedfs/s3.json
+        exec weed server -dir=/data -s3 -s3.port="$$RESTORE_STORAGE_S3_PORT" \
+          -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=1024
     environment:
-      MINIO_ROOT_USER: ${RESTORE_S3_ACCESS_KEY:?required}
-      MINIO_ROOT_PASSWORD: ${RESTORE_S3_SECRET_KEY:?required}
-    volumes: ["restore-minio-data:/data"]
+      RESTORE_S3_ACCESS_KEY: ${RESTORE_S3_ACCESS_KEY:?required}
+      RESTORE_S3_SECRET_KEY: ${RESTORE_S3_SECRET_KEY:?required}
+      # Must stay consistent with the port in RESTORE_S3_HOST.
+      RESTORE_STORAGE_S3_PORT: ${RESTORE_STORAGE_S3_PORT:-8333}
+    volumes: ["restore-storage-data:/data"]
+    # The master answering proves the process is up. That the S3 gateway is
+    # usable is proven by restore.sh, which fails loudly when a bucket cannot be
+    # created; an anonymous probe of the S3 port would be rejected by design.
     healthcheck:
-      test: [CMD, curl, -fsS, "http://localhost:9000/minio/health/ready"]
+      test: [CMD-SHELL, "wget -q -O /dev/null http://localhost:9333/"]
       interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 30
     logging: *logging
 volumes:
   restore-postgres-data:
-  restore-minio-data:
+  restore-storage-data:
