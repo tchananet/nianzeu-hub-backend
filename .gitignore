@@ -12,3 +12,4 @@ __pycache__/
 *.key
 .coverage
 htmlcov/
+test.env

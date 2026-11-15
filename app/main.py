@@ -1,14 +1,13 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from urllib.parse import urlsplit
 
 from fastapi import FastAPI
-from minio import Minio
-from minio.error import MinioException, S3Error
+from minio.error import MinioException
 from sqlalchemy.exc import SQLAlchemyError
-from urllib3 import PoolManager, Timeout
 from urllib3.exceptions import HTTPError
 
+# Re-exported: docker-compose bootstraps the buckets through app.main.
+from app.core.buckets import check_buckets, initialize_buckets, storage_client
 from app.core.config import Settings
 from app.core.database import build_engine, check_database
 from app.core.json_transport import JsonTransport
@@ -17,40 +16,7 @@ from app.shared.errors import DependencyUnavailable
 from app.shared.http_errors import install_error_handlers
 from app.wiring import build_routers
 
-
-def storage_client(settings: Settings) -> Minio:
-    endpoint = urlsplit(settings.storage_endpoint)
-    return Minio(
-        endpoint.netloc,
-        access_key=settings.storage_access_key.get_secret_value(),
-        secret_key=settings.storage_secret_key.get_secret_value(),
-        secure=endpoint.scheme == "https",
-        region="us-east-1",
-        http_client=PoolManager(timeout=Timeout(connect=2, read=2), retries=False),
-    )
-
-
-def initialize_buckets() -> None:
-    settings = Settings()
-    client = storage_client(settings)
-    for bucket in (settings.quarantine_bucket, settings.validated_bucket):
-        if not client.bucket_exists(bucket):
-            client.make_bucket(bucket)
-        client.delete_bucket_policy(bucket)
-
-
-def check_buckets(client: Minio, settings: Settings) -> None:
-    for bucket in (settings.quarantine_bucket, settings.validated_bucket):
-        if not client.bucket_exists(bucket):
-            raise DependencyUnavailable()
-        try:
-            client.get_bucket_policy(bucket)
-        except S3Error as error:
-            if error.code not in {"NoSuchBucketPolicy", "NotImplemented"}:
-                raise
-        else:
-            # Fail closed: bootstrap never installs an anonymous access policy.
-            raise DependencyUnavailable()
+__all__ = ["check_buckets", "create_app", "initialize_buckets", "storage_client"]
 
 
 def create_app() -> FastAPI:
