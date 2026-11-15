@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -17,6 +18,8 @@ from app.shared.http_errors import install_error_handlers
 from app.wiring import build_routers
 
 __all__ = ["check_buckets", "create_app", "initialize_buckets", "storage_client"]
+
+logger = logging.getLogger("app.health")
 
 
 def create_app() -> FastAPI:
@@ -56,10 +59,17 @@ def create_app() -> FastAPI:
 
     @application.get("/health/ready")
     def ready() -> dict[str, str]:
+        # Name the failing dependency. The response stays opaque, but an operator
+        # should not have to read the database's own log to find out which one broke.
         try:
             check_database(application.state.engine)
+        except (SQLAlchemyError, OSError):
+            logger.error("Readiness failed", extra={"code": "DATABASE_UNAVAILABLE"})
+            raise DependencyUnavailable() from None
+        try:
             check_buckets(application.state.storage, application.state.settings)
-        except (SQLAlchemyError, MinioException, HTTPError, OSError):
+        except (MinioException, HTTPError, OSError):
+            logger.error("Readiness failed", extra={"code": "STORAGE_UNAVAILABLE"})
             raise DependencyUnavailable() from None
         return {"status": "ready"}
 
