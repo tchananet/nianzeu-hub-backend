@@ -20,10 +20,10 @@ def health_client(monkeypatch):
     engine, storage = MagicMock(), Mock()
     monkeypatch.setattr("app.main.Settings", lambda: settings)
     monkeypatch.setattr("app.main.build_engine", lambda _: engine)
-    monkeypatch.setattr("app.main.storage_client", lambda _: storage)
+    monkeypatch.setattr("app.main.storage_client", lambda *_: storage)
     # initialize_buckets lives in app.core.buckets and resolves these in its own module.
     monkeypatch.setattr("app.core.buckets.Settings", lambda: settings)
-    monkeypatch.setattr("app.core.buckets.storage_client", lambda _: storage)
+    monkeypatch.setattr("app.core.buckets.storage_client", lambda *_: storage)
     with TestClient(create_app(), raise_server_exceptions=False) as client:
         yield client, engine, storage
     engine.dispose.assert_called_once()
