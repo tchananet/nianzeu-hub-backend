@@ -13,7 +13,7 @@ from app.core.database import Base, build_engine
         ("frontend_origin", "https://user:password@test"),
         ("frontend_origin", "http://remote.test"),
         ("frontend_origin", "https://test/path"),
-        ("storage_public_endpoint", "http://remote.test"),
+        ("storage_public_endpoint", "https://files.test/path"),
         ("quota_hmac_secret", "short"),
         ("pool_size", 6),
         ("environment", "unknown"),

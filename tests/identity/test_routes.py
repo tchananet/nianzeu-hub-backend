@@ -16,8 +16,11 @@ from app.shared.http_errors import install_error_handlers
 @pytest.fixture
 def client():
     service, limits = Mock(spec=IdentityService), Mock(spec=IdentityLimits)
+    # A configured origin: this suite asserts the origin and intent controls, which
+    # are deliberately absent when none is configured.
     settings = Settings.model_construct(environment="test", session_cross_site_enabled=True,
-                                        secure_cookies=True)
+                                        secure_cookies=True,
+                                        frontend_origin="https://app.example.com")
     app = FastAPI()
     install_error_handlers(app)
     app.add_middleware(JsonTransport)
@@ -28,7 +31,7 @@ def client():
 
 def test_reset_uniform_and_never_calls_service(client):
     http, service, limits = client
-    headers = {"Origin": "https://netatroniks.xyz"}
+    headers = {"Origin": "https://app.example.com"}
     for email in ["known@example.com", "unknown@example.com"]:
         response = http.post("/api/v1/auth/password/forgot",
                              json={"email": email}, headers=headers)

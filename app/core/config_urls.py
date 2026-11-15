@@ -9,7 +9,9 @@ def is_local_http_api(value: str | None) -> bool:
     return url.scheme == "http" and url.hostname == "localhost"
 
 
-def endpoint(value: str, *, local_http: bool = False, internal: bool = False) -> str:
+def endpoint(
+    value: str, *, local_http: bool = False, internal: bool = False, plain_http: bool = False
+) -> str:
     if any(char.isspace() or ord(char) < 32 for char in value):
         raise ValueError("Whitespace/control characters forbidden in origins")
     url = urlsplit(value)
@@ -28,7 +30,7 @@ def endpoint(value: str, *, local_http: bool = False, internal: bool = False) ->
     ):
         raise ValueError("Expected an origin without credentials, path or query")
     if url.scheme != "https" and not (
-        url.scheme == "http" and (internal or local_http and loopback)
+        url.scheme == "http" and (internal or plain_http or local_http and loopback)
     ):
         raise ValueError("HTTPS required (explicit local loopback exception only)")
     return value.rstrip("/")

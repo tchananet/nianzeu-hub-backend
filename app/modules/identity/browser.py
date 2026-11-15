@@ -17,6 +17,8 @@ class BrowserPolicy:
         self.same_site: Literal["lax", "none"] = "none" if self.cross_site else "lax"
 
     def validate_origin(self, request: Request, required: bool) -> None:
+        if self.frontend_origin is None:
+            return  # Open mode: no origin is configured, so none is enforced.
         origins = request.headers.getlist("origin")
         origin = origins[0] if len(origins) == 1 else None
         if (len(origins) > 1 or required and origin is None
@@ -28,7 +30,12 @@ class BrowserPolicy:
     def validate_mutation(self, request: Request) -> None:
         self.validate_origin(request, required=True)
         if request.url.path.endswith(("/auth/login", "/auth/register")):
-            if request.headers.getlist("x-auth-intent") != ["session"]:
+            # The intent header defends a browser against a cross-site form post. With
+            # no origin configured there is no such defence to uphold, and demanding it
+            # would only break direct clients like curl or the Swagger page.
+            if self.frontend_origin is not None and (
+                request.headers.getlist("x-auth-intent") != ["session"]
+            ):
                 raise AppError("CSRF_FAILED", 403, "Authentication intent required")
             media = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
             if media != "application/json":
