@@ -25,7 +25,7 @@ CSRF est secret synchronisé consultable par le propriétaire de session, DB res
 | certifications | id,profile_id FK talent_profiles,name varchar(150),issuer varchar(150),issued_on date,expires_on date nullable,credential_url varchar(2048) nullable,position smallint CHECK 0..19,created_at ; UNIQUE(profile_id,position), CHECK expires_on IS NULL OR expires_on>=issued_on |
 | contact_settings | profile_id PK FK talent_profiles,email varchar(254) nullable,phone varchar(16) nullable,whatsapp varchar(16) nullable,email_visible/phone_visible/whatsapp_visible boolean défaut false ; chaque flag true exige valeur non nulle |
 | profile_views | profile_id FK talent_profiles,day date,count integer CHECK >=0 ; PK(profile_id,day) |
-| profile_view_dedup | profile_id FK talent_profiles,day date,visitor_hash char(64),expires_at timestamptz ; PK(profile_id,day,visitor_hash), index expires_at |
+| profile_view_dedup | profile_id FK talent_profiles,day date,visitor_hash char(64),expires_at timestamptz,hits smallint défaut 1 CHECK 1..100 (ajouté par M04) ; PK(profile_id,day,visitor_hash), index expires_at |
 
 CHECK availability IN ('immediate','1-week','freelance','full-time'), experience_level IN ('junior','intermediate','senior'). Rate : trois colonnes toutes null ou toutes renseignées, amount>0 et <=99999999.99, currency='XAF', amount=trunc(amount), unit IN ('hour','day','project'). Chaînes requises non vides sauf bio/description. Collections ordonnées par position ; skills tri normalized_name,id. Une ligne contact créée atomiquement avec profil. Unicité user_id protège création concurrente (une 201, l'autre mise à jour 200 après verrou utilisateur).
 
@@ -58,6 +58,7 @@ Index M03 : talent_profiles(updated_at DESC,id ASC), (availability), (experience
 | M01 / 0001_identity | null | alembic.ini/env, tables identité/quotas | vide → upgrade → downgrade base → upgrade ; uniques/FK/checks, sessions |
 | M02 / 0002_profiles | 0001_identity | profils/contacts/skills/vues + seed | fixture users/sessions M01 conservée ; upgrade → downgrade 0001 → upgrade ; contraintes et seed |
 | M03 / 0003_portfolio_search | 0002_profiles | portfolio/uploads et index | fixtures identité/profils/contacts M02 conservées ; upgrade → downgrade 0002 → upgrade ; index/checks |
+| M04 / 0004_view_hits | 0003_portfolio_search | compteur `hits` sur la déduplication de vues | colonne ajoutée avec défaut 1 sur données existantes ; CHECK 1..100 ; upgrade → downgrade 0003 → upgrade |
 
 Un seul propriétaire migrations, une seule tête. Downgrades destructifs réservés aux bases jetables ; jamais stratégie de rollback production automatique. Les fixtures des tables introduites par une révision peuvent être perdues au downgrade ; conservation exigée pour tables des révisions antérieures. Migrations DDL autonomes, sans import des modules encore absents. Modèles ORM livrés I01/P01/O01 doivent correspondre au DDL ; différences bloquent QA et nécessitent mission dédiée, aucune migration cachée de module.
 

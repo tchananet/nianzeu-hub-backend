@@ -37,7 +37,7 @@ Fenêtres fixes UTC, incrément atomique PostgreSQL `INSERT ... ON CONFLICT ... 
 | lectures privées | 120 / minute / utilisateur |
 | mutations authentifiées | 60 / minute / utilisateur, groupe partagé |
 | upload-url et validate | chacun 10 / heure / utilisateur, en plus du groupe mutations |
-| vues | 30 / minute / IP ; une vue / profil / IP-HMAC / jour |
+| vues | 30 / minute / IP ; 100 vues / profil / IP-HMAC / jour |
 | contenu fichier | 60 / minute / IP, streaming borné par architecture |
 
 Health est interne au proxy et exempt de quotas DB pour ne pas créer de dépendance circulaire. GET CSRF utilise le quota lectures privées. Les quotas ne constituent pas une capacité VPS démontrée.

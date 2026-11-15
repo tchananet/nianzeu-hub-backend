@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import CHAR, CheckConstraint, DateTime, ForeignKey
+from sqlalchemy import CHAR, CheckConstraint, DateTime, ForeignKey, SmallInteger
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.schema import conv
 
@@ -24,3 +24,4 @@ class ViewDedup(Base):
     day: Mapped[date] = mapped_column(primary_key=True)
     visitor_hash: Mapped[str] = mapped_column(CHAR(64), primary_key=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    hits: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")

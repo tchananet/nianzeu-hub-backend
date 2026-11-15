@@ -10,6 +10,10 @@ from app.core.primitives import Clock, utc_now
 from app.modules.profiles.repository import public_profile, transaction
 from app.modules.profiles.view_models import ProfileView, ViewDedup
 
+# Repeat visits count, up to this many per visitor per day, so a busy profile does
+# not look frozen while one address still cannot inflate the figure without bound.
+VIEWS_PER_VISITOR_DAY = 100
+
 
 class ViewsService:
     def __init__(self, factory: sessionmaker[Session], clock: Clock = utc_now) -> None:
@@ -23,10 +27,16 @@ class ViewsService:
             raise ValueError("UTC clock required")
         with transaction(self.factory) as db:
             public_profile(db, profile_id)
+            # One statement, so concurrent views cannot both pass the ceiling: the
+            # update only fires below it, and returns nothing once it is reached.
             inserted = db.scalar(insert(ViewDedup).values(
                 profile_id=profile_id, day=now.date(), visitor_hash=visitor_hash,
-                expires_at=now + timedelta(hours=48),
-            ).on_conflict_do_nothing().returning(ViewDedup.profile_id))
+                expires_at=now + timedelta(hours=48), hits=1,
+            ).on_conflict_do_update(
+                index_elements=["profile_id", "day", "visitor_hash"],
+                set_={"hits": ViewDedup.hits + 1},
+                where=ViewDedup.hits < VIEWS_PER_VISITOR_DAY,
+            ).returning(ViewDedup.profile_id))
             if inserted is not None:
                 db.execute(insert(ProfileView).values(
                     profile_id=profile_id, day=now.date(), count=1)
