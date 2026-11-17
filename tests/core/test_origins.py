@@ -3,13 +3,14 @@ import pytest
 from app.core.origins import is_allowed_origin, normalize_origin, usable_origin
 
 CONFIGURED = "https://app.example.com"
+ALLOWED = (CONFIGURED,)
 
 
 @pytest.mark.parametrize("value", [
     CONFIGURED, "HTTPS://APP.EXAMPLE.COM", "https://app.example.com:443",
 ])
 def test_the_configured_origin_is_trusted_however_it_is_spelled(value: str) -> None:
-    assert is_allowed_origin(value, "production", CONFIGURED)
+    assert is_allowed_origin(value, "production", ALLOWED)
 
 
 @pytest.mark.parametrize("value", [
@@ -26,21 +27,22 @@ def test_the_configured_origin_is_trusted_however_it_is_spelled(value: str) -> N
     "http://app.example.com", "https://app.example.com:444",
 ])
 def test_everything_else_is_refused(value: str) -> None:
-    assert not is_allowed_origin(value, "production", CONFIGURED)
+    assert not is_allowed_origin(value, "production", ALLOWED)
 
 
 def test_without_a_configured_origin_nothing_is_trusted() -> None:
-    # A caller that forgets to pass the configured origin must fail closed.
+    # A caller that forgets to pass the configured origins must fail closed.
     assert not is_allowed_origin(CONFIGURED, "production")
     assert not is_allowed_origin(CONFIGURED, "production", None)
+    assert not is_allowed_origin(CONFIGURED, "production", ())
 
 
 @pytest.mark.parametrize("port", ["", ":1", ":80", ":3000", ":65535"])
 def test_localhost_is_a_development_convenience_only(port: str) -> None:
     value = "http://localhost" + port
-    assert is_allowed_origin(value, "test", CONFIGURED)
-    assert is_allowed_origin(value, "local", CONFIGURED)
-    assert not is_allowed_origin(value, "production", CONFIGURED)
+    assert is_allowed_origin(value, "test", ALLOWED)
+    assert is_allowed_origin(value, "local", ALLOWED)
+    assert not is_allowed_origin(value, "production", ALLOWED)
 
 
 @pytest.mark.parametrize("value", [
@@ -48,7 +50,7 @@ def test_localhost_is_a_development_convenience_only(port: str) -> None:
     "http://localhost:65536",
 ])
 def test_lookalike_loopback_origins_are_not_localhost(value: str) -> None:
-    assert not is_allowed_origin(value, "test", CONFIGURED)
+    assert not is_allowed_origin(value, "test", ALLOWED)
 
 
 @pytest.mark.parametrize("value", [

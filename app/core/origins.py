@@ -35,11 +35,34 @@ def local_browser_origin(url: SplitResult, environment: str) -> bool:
             and url.hostname == "localhost")
 
 
-def is_allowed_origin(value: str, environment: str, configured: str | None = None) -> bool:
-    """One trusted origin: the configured frontend. No domain is trusted implicitly.
+WILDCARD = "https://*."
 
-    `configured` is the already-normalised ``Settings.frontend_origin``. Passing None
-    trusts nothing, so a caller that forgets to supply it fails closed.
+
+def wildcard_suffix(pattern: str) -> str | None:
+    """`https://*.example.com` -> `example.com`; anything else -> None."""
+    if not pattern.startswith(WILDCARD):
+        return None
+    return pattern[len(WILDCARD):]
+
+
+def matches(pattern: str, candidate: str) -> bool:
+    suffix = wildcard_suffix(pattern)
+    if suffix is None:
+        return pattern == candidate
+    url = urlsplit(candidate)
+    host = url.hostname or ""
+    # endswith on a dotted suffix, so example.com.evil.test can never match.
+    return url.scheme == "https" and url.port in {None, 443} and host.endswith(f".{suffix}")
+
+
+def is_allowed_origin(
+    value: str, environment: str, configured: tuple[str, ...] | None = None
+) -> bool:
+    """Only the configured origins are trusted. No domain is trusted implicitly.
+
+    `configured` holds the already-normalised entries of ``APP_FRONTEND_ORIGIN``.
+    Passing None or an empty tuple trusts nothing, so a caller that forgets to supply
+    them fails closed rather than open.
     """
     try:
         candidate = normalize_origin(value)
@@ -47,11 +70,24 @@ def is_allowed_origin(value: str, environment: str, configured: str | None = Non
         return False
     if local_browser_origin(urlsplit(candidate), environment):
         return True
-    return configured is not None and candidate == configured
+    return any(matches(pattern, candidate) for pattern in configured or ())
 
 
 def usable_origin(value: str, environment: str) -> str:
-    """Validates the configured frontend origin itself; returns it normalised."""
+    """Validates one configured entry; returns it normalised.
+
+    A `https://*.example.com` wildcard is accepted, but never with fewer than two
+    labels after the star: `https://*.app` would hand trust to an entire TLD.
+    """
+    value = value.strip()  # a list written as "a, b" keeps the separating space
+    suffix = wildcard_suffix(value.lower())
+    if suffix is not None:
+        host = urlsplit(f"https://{suffix}").hostname or ""
+        if host != suffix or host.count(".") < 1 or any(
+            LABEL.fullmatch(label) is None for label in host.split(".")
+        ):
+            raise ValueError("A wildcard origin needs a host of at least two labels")
+        return f"{WILDCARD}{host}"
     candidate = normalize_origin(value)
     url = urlsplit(candidate)
     if url.scheme == "https" and url.port in {None, 443}:

@@ -31,10 +31,23 @@ chemin d'entrée prévu. Aucun autre reverse proxy ne doit publier 8000 ou 9000 
 Le code ne contient **aucune liste de domaines**. L'origine de confiance est exactement
 `APP_FRONTEND_ORIGIN`, et `app/core/origins.py` ne fait que la comparer :
 
+`APP_FRONTEND_ORIGIN` accepte une **liste séparée par des virgules**. Chaque entrée est
+soit une origine HTTPS exacte, soit un joker `https://*.hôte` qui couvre ses sous-domaines :
+
 | Environnement | Origines acceptées |
 |---|---|
-| `production` | **uniquement** `APP_FRONTEND_ORIGIN` (HTTPS, port 443) |
-| `local`, `test` | celle-ci **plus** `http://localhost[:port]`, commodité de développement |
+| `production` | **uniquement** les entrées de `APP_FRONTEND_ORIGIN` (HTTPS, port 443) |
+| `local`, `test` | celles-ci **plus** `http://localhost[:port]`, commodité de développement |
+
+Un joker exige au moins deux étiquettes après l'étoile : `https://*.app` est refusé au
+démarrage, car accorder la confiance à un TLD entier n'est jamais l'intention. Le suffixe
+lui-même n'est pas couvert — `https://*.vercel.app` n'autorise pas `https://vercel.app` —
+et la comparaison porte sur un suffixe pointé, donc `vercel.app.evil.test` ne correspond pas.
+
+**Attention aux suffixes partagés.** `*.vercel.app` est public : n'importe qui peut y
+déployer un site, qui devient alors une origine de confiance. Le jeton CSRF reste exigé sur
+chaque mutation et l'absence d'intergiciel CORS empêche un script tiers de le lire, mais
+cette entrée doit être retirée dès que le frontend vit sur votre propre domaine.
 
 Conséquence à retenir : un sous-domaine de l'origine configurée n'est **pas** accepté, et
 aucune valeur par défaut n'existe — un appel interne qui oublierait de transmettre l'origine

@@ -21,7 +21,7 @@ réaffichent pas les valeurs. Les secrets sont des `SecretStr` et ne sortent ni 
 | `APP_STORAGE_SECRET_KEY` | **oui** | **requis** | longueur ≥ 1 | `<SECRET_KEY>` |
 | `APP_QUARANTINE_BUCKET` | non | **requis** | `^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$` (3..63) ; différent du bucket validé | `quarantine` |
 | `APP_VALIDATED_BUCKET` | non | **requis** | même motif ; différent du bucket de quarantaine | `validated` |
-| `APP_FRONTEND_ORIGIN` | non | **requis** | **HTTPS** (port 443) sur n'importe quel domaine, ou `http://localhost` en `local`/`test` ; valeur normalisée. C'est **cette** valeur qui définit la seule origine de confiance : le code ne contient plus aucune liste de domaines | `https://app.example.com` |
+| `APP_FRONTEND_ORIGIN` | non | **requis** | liste séparée par des virgules ; chaque entrée est une origine **HTTPS** (port 443) ou un joker `https://*.hôte` d'au moins deux étiquettes ; `http://localhost` admis en `local`/`test`. Ce sont **ces** valeurs qui définissent les origines de confiance : le code ne contient aucune liste de domaines | `https://app.example.com,https://*.vercel.app` |
 | `APP_DOCS_ENABLED` | non | `false` | `true` ou `false` littéral. À `true`, Swagger est servi sur `/api/v1/docs` et le schéma sur `/api/v1/openapi.json` ; automatiquement actif en `local`/`test` | `true` |
 | `APP_QUOTA_HMAC_SECRET` | **oui** | **requis** | longueur ≥ 32 caractères | `<32+ CARACTÈRES ALÉATOIRES>` |
 | `APP_SECURE_COOKIES` | non | `true` | littéralement `true` ou `false` (casse libre), rien d'autre ; doit être `true` hors `local`/`test` | `true` |

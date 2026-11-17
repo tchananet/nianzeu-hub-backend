@@ -10,20 +10,20 @@ from app.shared.errors import AppError
 class BrowserPolicy:
     def __init__(self, settings: Settings) -> None:
         self.environment = settings.environment
-        self.frontend_origin = settings.frontend_origin
+        self.frontend_origins = settings.allowed_origins()
         self.cross_site = settings.session_cross_site_enabled
         self.secure = settings.secure_cookies
         self.cookie_name = "__Host-session" if self.secure else "session_local"
         self.same_site: Literal["lax", "none"] = "none" if self.cross_site else "lax"
 
     def validate_origin(self, request: Request, required: bool) -> None:
-        if self.frontend_origin is None:
+        if not self.frontend_origins:
             return  # Open mode: no origin is configured, so none is enforced.
         origins = request.headers.getlist("origin")
         origin = origins[0] if len(origins) == 1 else None
         if (len(origins) > 1 or required and origin is None
                 or origin is not None
-                and not is_allowed_origin(origin, self.environment, self.frontend_origin)
+                and not is_allowed_origin(origin, self.environment, self.frontend_origins)
                 or not self.cross_site and request.headers.get("sec-fetch-site") == "cross-site"):
             raise AppError("ORIGIN_FORBIDDEN", 403, "Origin forbidden")
 
@@ -33,7 +33,7 @@ class BrowserPolicy:
             # The intent header defends a browser against a cross-site form post. With
             # no origin configured there is no such defence to uphold, and demanding it
             # would only break direct clients like curl or the Swagger page.
-            if self.frontend_origin is not None and (
+            if self.frontend_origins and (
                 request.headers.getlist("x-auth-intent") != ["session"]
             ):
                 raise AppError("CSRF_FAILED", 403, "Authentication intent required")

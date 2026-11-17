@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     storage_secret_key: SecretStr = Field(min_length=1)
     quarantine_bucket: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
     validated_bucket: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
-    # Absent is legal outside production and means "enforce no origin at all": the
-    # open mode used to reach the API directly over plain HTTP with no proxy.
+    # Comma-separated: exact HTTPS origins, or `https://*.host` wildcards. Absent is
+    # legal outside production and enforces no origin at all (open mode).
     frontend_origin: str | None = None
     quota_hmac_secret: SecretStr = Field(min_length=32)
     secure_cookies: bool = True
@@ -68,7 +68,10 @@ class Settings(BaseSettings):
             raise ValueError("PostgreSQL psycopg URL with credentials required; no query options")
         local = self.environment in ("local", "test")
         if self.frontend_origin is not None:
-            self.frontend_origin = usable_origin(self.frontend_origin, self.environment)
+            entries = [p for p in self.frontend_origin.split(",") if p.strip()]
+            if not entries:
+                raise ValueError("A frontend origin list cannot be empty")
+            self.frontend_origin = ",".join(usable_origin(e, self.environment) for e in entries)
         elif not local:
             raise ValueError("A frontend origin is required in production")
         if self.api_public_origin is not None:
@@ -91,3 +94,7 @@ class Settings(BaseSettings):
         if self.workers * (self.pool_size + self.max_overflow) > 20:
             raise ValueError("API connection budget exceeds 20")
         return self
+
+    def allowed_origins(self) -> tuple[str, ...]:
+        """The configured entries. Empty means no origin is enforced at all."""
+        return tuple(self.frontend_origin.split(",")) if self.frontend_origin else ()
