@@ -43,6 +43,26 @@ sont tous deux traités comme « aucune policy » ; une policy réellement prés
 toujours fermé. Ne jamais installer de policy anonyme, ne jamais publier les ports internes
 de SeaweedFS (master 9333, volume 8080, filer 8888), ne jamais ajouter de port au `db`.
 
+## Allocation de volumes SeaweedFS
+
+`weed server` plafonne le nombre de volumes à **8** par défaut (`-volume.max`), et chaque
+bucket est une *collection* distincte que SeaweedFS fait croître par rafales de 7 volumes.
+Les deux buckets privés ne tiennent donc pas dans le défaut : la première écriture dans
+`quarantine` épuise le plafond, et toute écriture vers `validated` échoue ensuite en
+`InternalError` — le master journalisant `topo failed to pick 1 from 0 node candidates` et
+`create 7 volume, created 0: Not enough data nodes found!`.
+
+Le Compose fixe donc `-volume.max=50`. C'est un **plafond, pas une réservation** : les
+fichiers de volume sont créés à la demande, donc l'élever ne consomme aucun disque
+d'avance. Avec `-master.volumeSizeLimitMB=1024`, le plafond théorique est de 50 GiB.
+`tests/infra/test_proxy_headers.py` exige au moins 14 (7 par collection, deux buckets) de
+sorte qu'un retour au défaut casse la suite au lieu de casser le téléversement en
+production.
+
+Symptôme à ne pas confondre : au démarrage, le master traverse une fenêtre de quelques
+secondes sans leader élu (`raft.Server: Not current leader`). Elle se résorbe seule et
+n'est pas la cause d'un échec d'allocation persistant.
+
 Accessibilité depuis NPM : la publication est liée à `127.0.0.1`. Un NPM conteneurisé sur
 son propre réseau bridge **ne peut pas** joindre `127.0.0.1:8000` de l'hôte. Il faut soit un
 NPM en `network_mode: host`, soit rattacher `docker-compose.yml` à un réseau externe

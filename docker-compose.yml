@@ -64,8 +64,15 @@ services:
         # on the container's own address, so a loopback healthcheck is refused even
         # though the service is fine. Nothing extra is exposed -- only 8333 is published,
         # and only to the host's loopback.
+        # -volume.max is required, not a tuning knob: it defaults to 8 for `weed
+        # server`, each bucket is a separate collection, and SeaweedFS grows a
+        # collection by 7 volumes at a time. Quarantine alone therefore exhausts the
+        # default, and every write to `validated` fails with InternalError while the
+        # master logs "0 node candidates". A limit is a ceiling, not a reservation:
+        # volume files are created on demand, so raising it costs no disk up front.
         exec weed server -dir=/data -s3 -s3.port=8333 -ip.bind=0.0.0.0 \
-          -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=1024
+          -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=1024 \
+          -volume.max=50
     environment:
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:?required}
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:?required}

@@ -60,3 +60,14 @@ def test_the_schema_is_applied_before_the_api_starts() -> None:
     compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
     assert "alembic upgrade head" in compose
     assert "buckets: {condition: service_completed_successfully}" in compose
+
+
+def test_storage_can_allocate_a_volume_for_every_bucket() -> None:
+    # `weed server` defaults to -volume.max=8 and grows a collection by 7 volumes at
+    # once. Each bucket is its own collection, so quarantine alone exhausted the
+    # default and every write to the validated bucket failed with InternalError while
+    # the master logged "0 node candidates". Two private buckets need two collections.
+    compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "-volume.max=" in compose
+    limit = int(compose.split("-volume.max=")[1].split()[0])
+    assert limit >= 14
