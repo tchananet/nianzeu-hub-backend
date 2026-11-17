@@ -60,8 +60,29 @@ fait échouer le démarrage immédiatement.
 La décision A01-02 est **même origine** : frontend et `/api` derrière un seul nom HTTPS.
 Aucun middleware CORS n'est installé dans `app/main.py` ; les constantes `CORS_METHODS`,
 `CORS_HEADERS` et `CORS_EXPOSE_HEADERS` d'`origins.py` sont déclarées mais inutilisées, et le
-préflight `OPTIONS 204` décrit dans `contracts/http.md` n'existe pas. Servir le frontend sur
-une origine différente de l'API échouerait donc côté navigateur — voir GAP-03.
+préflight `OPTIONS 204` décrit dans `contracts/http.md` n'existe pas. Un navigateur qui
+appelle l'API depuis une autre origine est donc bloqué par le navigateur lui-même, avant
+tout contrôle applicatif — aucune valeur d'`APP_FRONTEND_ORIGIN` n'y change quoi que ce soit.
+
+**C'est le frontend qui tient la même origine.** `next.config.ts` réécrit `/api/v1/:path*`
+vers `${API_ORIGIN}/api/v1/:path*` : le navigateur ne parle qu'à son propre hôte, Vercel
+relaie. Conséquences vérifiées contre `BrowserPolicy` :
+
+| Appel | Résultat |
+|---|---|
+| via le proxy (`Sec-Fetch-Site: same-origin`), origine `*.vercel.app` configurée | accepté |
+| déploiement de prévisualisation Vercel via le proxy | accepté |
+| appel **direct** du navigateur à l'API (`cross-site`) | 403 `ORIGIN_FORBIDDEN` |
+| origine non configurée | 403 `ORIGIN_FORBIDDEN` |
+
+`API_ORIGIN` est une variable du projet **Vercel**, pas de l'API. Non définie, aucune
+réécriture n'est produite — plutôt rien qu'un proxy vers une cible fausse. Le frontend doit
+donc appeler des chemins **relatifs** (`/api/v1/…`), jamais l'hôte de l'API.
+
+Passer réellement en cross-origine demanderait trois changements, pas un : intergiciel CORS
+avec préflight, `APP_SESSION_CROSS_SITE_ENABLED=true` pour obtenir `SameSite=None` (sinon le
+cookie n'est pas renvoyé), et le passage de cette variable par le Compose (GAP-04). Le proxy
+évite les trois et conserve le cookie en première partie.
 
 Ce qui est réellement appliqué aujourd'hui (`BrowserPolicy` dans
 `app/modules/identity/browser.py`) :
