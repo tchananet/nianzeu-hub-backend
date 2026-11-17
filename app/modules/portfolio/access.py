@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.primitives import Clock, ip_quota_key, quota_key, utc_now
 from app.core.quotas import consume
+from app.modules.identity.headers import CsrfToken
 from app.modules.identity.limits import IdentityLimits
 from app.modules.profiles.access import no_query, private_headers
 from app.shared.errors import DependencyUnavailable
@@ -25,22 +26,31 @@ class PortfolioAccess:
         self.secret, self.clock = secret, clock
         self.limits = IdentityLimits(factory, secret, clock)
 
-    def collection(self, request: Request, response: Response) -> Principal:
+    # x_csrf_token is declared on each dependency entry point and never read: it
+    # publishes the header these routes require, so the Swagger page offers a field
+    # for it. The value is read from the request by the identity resolver, which is
+    # why these must stay declarations and nothing more. FastAPI inspects only the
+    # callable it is handed, never its callees, hence one declaration per entry point.
+    def collection(self, request: Request, response: Response,
+                       x_csrf_token: CsrfToken = None) -> Principal:
         """Paginated owner routes: the pagination dependency owns the query allowlist."""
         principal = self.resolver(request)
         self.limits.user(principal.user_id, request.method not in {"GET", "HEAD"})
         private_headers(response)
         return principal
 
-    def owner(self, request: Request, response: Response) -> Principal:
+    def owner(self, request: Request, response: Response,
+                  x_csrf_token: CsrfToken = None) -> Principal:
         principal = self.collection(request, response)
         no_query(request)
         return principal
 
-    def upload_url(self, request: Request, response: Response) -> Principal:
+    def upload_url(self, request: Request, response: Response,
+                       x_csrf_token: CsrfToken = None) -> Principal:
         return self.route_limited(request, response, "portfolio_upload_url")
 
-    def validate(self, request: Request, response: Response) -> Principal:
+    def validate(self, request: Request, response: Response,
+                     x_csrf_token: CsrfToken = None) -> Principal:
         return self.route_limited(request, response, "portfolio_validate")
 
     def route_limited(self, request: Request, response: Response, scope: str) -> Principal:

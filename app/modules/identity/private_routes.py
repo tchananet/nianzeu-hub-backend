@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 
 from app.modules.identity.browser import BrowserPolicy
+from app.modules.identity.headers import declare_csrf
 from app.modules.identity.limits import IdentityLimits
 from app.modules.identity.schemas import CsrfResponse, UserResponse
 from app.modules.identity.service import Authenticated, IdentityService
@@ -32,7 +33,8 @@ def private_router(service: IdentityService, limits: IdentityLimits,
         browser.validate_csrf_read(request)
         return CsrfResponse(csrf_token=identity(request, response).csrf_token)
 
-    @router.post("/logout", status_code=204, response_class=Response)
+    @router.post("/logout", status_code=204, response_class=Response,
+                 dependencies=[Depends(declare_csrf)])
     def logout(request: Request) -> Response:
         response = Response(status_code=204)
         identity(request, response, mutation=True)

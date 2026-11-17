@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.primitives import Clock, ip_quota_key, utc_now
 from app.core.quotas import consume
 from app.modules.identity.browser import BrowserPolicy
+from app.modules.identity.headers import CsrfToken
 from app.modules.identity.limits import IdentityLimits
 from app.shared.errors import DependencyUnavailable
 from app.shared.principal import Principal, PrincipalResolver
@@ -17,7 +18,11 @@ class ProfileAccess:
         self.secret, self.clock = secret, clock
         self.limits = IdentityLimits(factory, secret, clock)
 
-    def owner(self, request: Request, response: Response) -> Principal:
+    # x_csrf_token is declared, never read: it publishes the header that every
+    # owner-protected mutation requires. The token is read from the request by the
+    # identity service, so this must stay a declaration and nothing more.
+    def owner(self, request: Request, response: Response,
+              x_csrf_token: CsrfToken = None) -> Principal:
         principal = self.resolver(request)
         self.limits.user(principal.user_id, request.method not in {"GET", "HEAD"})
         no_query(request)
