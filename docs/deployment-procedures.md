@@ -22,8 +22,9 @@ Toutes les commandes s'exécutent depuis un checkout du dépôt au SHA livré, a
 6. `dc up -d --wait db minio` puis vérifier `dc ps` : les deux doivent être `healthy`.
 7. `dc run --rm --no-deps buckets` ou laisser la dépendance le faire : création idempotente des
    deux buckets privés et retrait de toute policy.
-8. **Appliquer les migrations** avant de démarrer l'API, selon
-   [deployment-ops.md](deployment-ops.md) ; relever `alembic heads` et `alembic current`.
+8. Les migrations sont appliquées par le conteneur d'initialisation avant le démarrage de
+   l'API (voir [deployment-ops.md](deployment-ops.md)). Relever la révision atteinte dans
+   ses journaux ; un échec y arrête le déploiement.
 9. `dc up -d --wait api` ; vérifier `dc ps` (`healthy`) puis, depuis l'hôte,
    `curl -fsS http://127.0.0.1:${API_PORT}/health/live` et `.../health/ready`.
 10. Configurer l'hôte proxy NPM : certificat valide, redirection HTTPS, `Host` transmis,

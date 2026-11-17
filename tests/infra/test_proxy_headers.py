@@ -51,3 +51,12 @@ def test_an_override_puts_the_api_on_the_proxy_network() -> None:
     assert "db:" not in override and "minio:" not in override
     base = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
     assert "proxy:" not in base  # the base stack declares no such network
+
+
+def test_the_schema_is_applied_before_the_api_starts() -> None:
+    # A missing migration used to leave the API running against a database with no
+    # tables, reporting ready while every request failed. The one-shot init container
+    # applies the schema, and api waits for it to exit successfully.
+    compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "alembic upgrade head" in compose
+    assert "buckets: {condition: service_completed_successfully}" in compose

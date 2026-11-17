@@ -23,9 +23,14 @@ Appliqué et vérifié sur PostgreSQL réel, campagne `c93d1ea`.
 - **L'image runtime contient `alembic.ini` et `migrations/`** : le `Dockerfile` les copie, donc
   l'artefact livré applique ses propres migrations sans checkout hôte ni montage (GAP-11 levé ;
   non-régression : `tests/infra/test_proxy_headers.py`).
-- **Aucun service Compose n'applique de migration** et A01 interdit la migration automatique au
-  démarrage multiworker : c'est une étape manuelle, unique, explicite, exécutée une seule fois
-  par déploiement, jamais en parallèle de deux instances.
+- **Le service d'initialisation applique la migration** avant que l'API ne démarre :
+  `buckets` lance `alembic upgrade head`, puis `alembic current`, puis le bootstrap des
+  buckets. C'est un conteneur unique, `restart: "no"`, dont `api` attend la sortie en
+  succès — l'interdiction A01 visait la migration concurrente au démarrage de plusieurs
+  workers, ce que ce conteneur unique évite par construction. Une migration qui échoue
+  arrête donc le déploiement, au lieu de laisser l'API tourner sur une base sans tables.
+- `alembic upgrade head` est idempotent : le rejouer à chaque déploiement ne fait rien
+  lorsque la base est déjà à jour.
 - `db` ne publiant aucun port, l'hôte ne joint pas PostgreSQL directement. Monter les scripts
   dans un conteneur jetable rattaché au réseau du projet, depuis un checkout au SHA déployé :
 

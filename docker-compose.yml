@@ -79,11 +79,22 @@ services:
       timeout: 3s
       retries: 30
     restart: unless-stopped
+  # One-shot init: schema first, then the private buckets. A single container, so
+  # there is no race between workers, and `api` waits for it to exit successfully --
+  # which means a failed migration stops the deployment instead of leaving the API
+  # running against a database with no tables.
   buckets:
     build: {context: ., target: runtime}
     environment: *app-env
-    command: [python, -c, "from app.main import initialize_buckets; initialize_buckets()"]
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        alembic upgrade head
+        alembic current
+        python -c "from app.main import initialize_buckets; initialize_buckets()"
     depends_on:
+      db: {condition: service_healthy}
       storage: {condition: service_healthy}
     restart: "no"
     read_only: true
