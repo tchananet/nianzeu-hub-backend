@@ -53,16 +53,18 @@ def test_duplicate_origin_headers_are_refused(assembled):
 
 
 @pytest.mark.parametrize("path", LOGIN_LIKE)
-def test_credential_routes_demand_an_explicit_session_intent(assembled, path):
+def test_credential_routes_demand_no_custom_header(assembled, path):
+    # The intent header was dropped deliberately: a trusted origin plus the JSON
+    # content type already refuse every cross-site form post, and a non-browser
+    # caller forges any header it likes. Requiring it only broke direct clients.
     headers = {"Origin": GOOD, "Content-Type": "application/json"}
-    forbidden(assembled.post(path, headers=headers), "CSRF_FAILED")
+    assert assembled.post(path, headers=headers, content="{}").status_code != 403
 
 
 @pytest.mark.parametrize("path", LOGIN_LIKE)
 def test_credential_routes_reject_a_form_content_type(assembled, path):
     # A form post is how a cross-site page would try to submit credentials.
-    headers = {"Origin": GOOD, "X-Auth-Intent": "session",
-               "Content-Type": "application/x-www-form-urlencoded"}
+    headers = {"Origin": GOOD, "Content-Type": "application/x-www-form-urlencoded"}
     response = assembled.post(path, headers=headers, content="email=a@b.c&password=x")
     assert response.status_code == 415
     assert response.json()["error"]["code"] == "UNSUPPORTED_MEDIA_TYPE"

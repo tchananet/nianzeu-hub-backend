@@ -2,7 +2,7 @@ import re
 from urllib.parse import SplitResult, urlsplit
 
 CORS_METHODS = ("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS")
-CORS_HEADERS = ("Content-Type", "X-CSRF-Token", "X-Auth-Intent")
+CORS_HEADERS = ("Content-Type", "X-CSRF-Token")
 CORS_EXPOSE_HEADERS = ("X-Request-ID", "Retry-After", "Location")
 LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", re.ASCII)
 

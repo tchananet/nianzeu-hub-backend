@@ -62,8 +62,9 @@ def test_the_schema_publishes_the_headers_the_policy_demands(monkeypatch) -> Non
     # "Try it out" on register answered 403 with no way to fix it from the page.
     with client(monkeypatch) as http:
         paths = http.get("/api/v1/openapi.json").json()["paths"]
+    # register and login declare nothing: they demand no custom header at all.
     for path in ("/api/v1/auth/register", "/api/v1/auth/login"):
-        assert header_names(paths[path]["post"]) == ["X-Auth-Intent"], path
+        assert header_names(paths[path]["post"]) == [], path
     for path, method in (
         ("/api/v1/auth/logout", "post"), ("/api/v1/profiles/me", "put"),
         ("/api/v1/profiles/me", "delete"), ("/api/v1/profiles/me/contacts", "put"),
@@ -82,7 +83,7 @@ def test_the_declared_headers_stay_optional_in_the_schema(monkeypatch) -> None:
     # which would reject direct clients in open mode -- where neither is demanded.
     with client(monkeypatch) as http:
         paths = http.get("/api/v1/openapi.json").json()["paths"]
-    for path, method in (("/api/v1/auth/register", "post"), ("/api/v1/profiles/me", "put")):
+    for path, method in (("/api/v1/auth/logout", "post"), ("/api/v1/profiles/me", "put")):
         for parameter in paths[path][method].get("parameters", []):
             if parameter.get("in") == "header":
                 assert parameter.get("required") is not True, f"{method} {path}"

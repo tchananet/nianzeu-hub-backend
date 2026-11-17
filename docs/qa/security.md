@@ -20,9 +20,14 @@ donc que la requête a atteint le compteur de quota. Obtenir 403 ou 415 à la pl
 positivement que les contrôles de transport et d'origine passent avant tout accès base,
 comme l'exige l'ordre de `docs/contracts/http.md`. Vérifié sur sept routes mutantes :
 absence d'`Origin`, origine étrangère, `Sec-Fetch-Site: cross-site`, en-têtes `Origin`
-dupliqués, absence d'intention `X-Auth-Intent` sur les routes de créancialité, et
-`Content-Type` de formulaire refusé en 415 — exactement la forme qu'emprunterait une page
-tierce pour poster des identifiants.
+dupliqués, et `Content-Type` de formulaire refusé en 415 — exactement la forme
+qu'emprunterait une page tierce pour poster des identifiants.
+
+L'en-tête `X-Auth-Intent` a été **retiré**. Il exigeait de tout client une valeur fixe sur
+`login` et `register`, sans rien bloquer que les trois contrôles ci-dessus ne bloquent
+déjà : un formulaire tiers échoue sur le `Content-Type` JSON, un `fetch()` tiers sur
+l'`Origin` et sur l'absence de CORS, et un appelant non navigateur forge n'importe quel
+en-tête. Il ne coûtait que de la friction — la page Swagger et tout client direct.
 
 ### Clés de quota (`test_quota_keys.py`)
 

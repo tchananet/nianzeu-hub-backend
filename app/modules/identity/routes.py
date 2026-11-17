@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Request, Response
 
 from app.modules.identity.accounts import unavailable_reset
 from app.modules.identity.browser import BrowserPolicy
-from app.modules.identity.headers import declare_intent
 from app.modules.identity.limits import IdentityLimits
 from app.modules.identity.private_routes import private_router
 from app.modules.identity.schemas import (
@@ -33,13 +32,11 @@ def create_router(service: IdentityService, limits: IdentityLimits,
 
     router = APIRouter(prefix="/api/v1/auth")
 
-    @router.post("/register", status_code=201,
-                 dependencies=[Depends(guard("register")), Depends(declare_intent)])
+    @router.post("/register", status_code=201, dependencies=[Depends(guard("register"))])
     def register(data: CredentialsInput) -> UserResponse:
         return UserResponse(user=service.register(data))
 
-    @router.post("/login",
-                 dependencies=[Depends(guard("login")), Depends(declare_intent)])
+    @router.post("/login", dependencies=[Depends(guard("login"))])
     def login(data: CredentialsInput, request: Request, response: Response) -> LoginResponse:
         limits.login_email(data.email)
         result = service.login(

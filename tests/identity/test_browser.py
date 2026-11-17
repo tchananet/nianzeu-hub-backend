@@ -19,14 +19,15 @@ def request(headers: dict[str, str], path: str = "/api/v1/auth/login") -> Reques
                     "headers": [(k.encode(), v.encode()) for k, v in headers.items()]})
 
 
-def test_cross_site_requires_origin_and_intent() -> None:
+def test_cross_site_requires_an_origin() -> None:
     browser = policy()
     headers = {"origin": "http://localhost:5173", "sec-fetch-site": "cross-site",
-               "x-auth-intent": "session", "content-type": "application/json"}
+               "content-type": "application/json"}
     browser.validate_mutation(request(headers))
-    for missing in ["origin", "x-auth-intent"]:
-        with pytest.raises(AppError):
-            browser.validate_mutation(request({k: v for k, v in headers.items() if k != missing}))
+    # No custom header is demanded: the origin and the JSON content type already
+    # refuse a cross-site form post, so a fourth lock bought nothing.
+    with pytest.raises(AppError):
+        browser.validate_mutation(request({k: v for k, v in headers.items() if k != "origin"}))
     with pytest.raises(AppError):
         policy(False).validate_mutation(request(headers))
     with pytest.raises(AppError):

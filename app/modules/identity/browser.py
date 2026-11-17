@@ -30,13 +30,11 @@ class BrowserPolicy:
     def validate_mutation(self, request: Request) -> None:
         self.validate_origin(request, required=True)
         if request.url.path.endswith(("/auth/login", "/auth/register")):
-            # The intent header defends a browser against a cross-site form post. With
-            # no origin configured there is no such defence to uphold, and demanding it
-            # would only break direct clients like curl or the Swagger page.
-            if self.frontend_origins and (
-                request.headers.getlist("x-auth-intent") != ["session"]
-            ):
-                raise AppError("CSRF_FAILED", 403, "Authentication intent required")
+            # JSON only. This is the defence against a cross-site form post, and it is
+            # the effective one: a form can emit urlencoded, multipart or text/plain,
+            # never application/json. A custom intent header used to be demanded here
+            # too, but it guarded nothing this check and the origin check do not
+            # already cover, while breaking Swagger and every direct client.
             media = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
             if media != "application/json":
                 raise AppError("UNSUPPORTED_MEDIA_TYPE", 415, "JSON required")
